@@ -9,11 +9,11 @@ Fill this in when the dataset is downloaded (`scripts/download_data.py`):
 
 | Field | Value |
 |---|---|
-| Name | TBD (Roboflow Universe, search "basketball players ball rim") |
-| URL | TBD |
-| License | TBD — record it *before* training |
+| Name | basketball-computer-vision v14 |
+| URL | https://universe.roboflow.com/basketballcomputervision/basketball-computer-vision/dataset/14 |
+| License | Public Domain |
 | Classes used | player, ball, rim |
-| Images (train/val/test) | TBD |
+| Images (train/val/test) | 235 (165/46/24) |
 
 ## Evaluation clips
 
