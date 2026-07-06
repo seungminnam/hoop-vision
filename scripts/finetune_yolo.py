@@ -28,9 +28,22 @@ def main() -> None:
     parser.add_argument("--imgsz", type=int, default=960, help="ball/rim are small")
     parser.add_argument("--batch", type=int, default=-1, help="-1 = auto")
     parser.add_argument("--name", default="hoopvision")
+    parser.add_argument("--device", default=None,
+                        help="cuda/mps/cpu; default: auto (MPS on Apple Silicon)")
     args = parser.parse_args()
 
     from ultralytics import YOLO
+
+    if args.device is None:
+        import sys
+        from pathlib import Path
+
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+        from hoopvision.detect import default_device
+
+        args.device = default_device()
+    if args.device == "mps" and args.batch == -1:
+        args.batch = 8  # autobatch is CUDA-only
 
     model = YOLO(args.model)
     model.train(
@@ -38,6 +51,7 @@ def main() -> None:
         epochs=args.epochs,
         imgsz=args.imgsz,
         batch=args.batch,
+        device=args.device,
         name=args.name,
         patience=15,
     )
