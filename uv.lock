@@ -480,7 +480,7 @@ requires-dist = [
     { name = "numpy", specifier = ">=1.26" },
     { name = "opencv-python", specifier = ">=4.10" },
     { name = "streamlit", specifier = ">=1.40" },
-    { name = "supervision", specifier = ">=0.29" },
+    { name = "supervision", specifier = ">=0.29,<0.30" },
     { name = "ultralytics", specifier = ">=8.4" },
 ]
 

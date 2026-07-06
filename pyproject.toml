@@ -8,7 +8,9 @@ dependencies = [
     "numpy>=1.26",
     "opencv-python>=4.10",
     "ultralytics>=8.4",
-    "supervision>=0.29",
+    # <0.30: sv.ByteTrack is deprecated and will be removed in 0.30; its
+    # replacement (the `trackers` package) currently ships a broken wheel.
+    "supervision>=0.29,<0.30",
     "streamlit>=1.40",
     "matplotlib>=3.9",
 ]

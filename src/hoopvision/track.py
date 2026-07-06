@@ -32,6 +32,9 @@ class TrackedPlayer:
 
 
 class PlayerTracker:
+    # sv.ByteTrack is deprecated in supervision 0.28+ (pinned <0.30 in
+    # pyproject). Migrate to roboflow/trackers' ByteTrackTracker once its
+    # wheel actually ships the package (2.5.0 on PyPI is empty).
     def __init__(self, frame_rate: float = 30.0):
         self._tracker = sv.ByteTrack(frame_rate=int(round(frame_rate)))
 
