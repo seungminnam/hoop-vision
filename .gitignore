@@ -1,0 +1,25 @@
+# Environments
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Data & model weights (never commit raw video or weights)
+data/*
+!data/README.md
+*.pt
+*.onnx
+runs/
+out/
+*.mp4
+*.mov
+*.avi
+
+# Allow small committed demo assets
+!app/samples/**
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/
