@@ -205,6 +205,10 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
 - [x] W6 — deployed demo + write-up: live at
   [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)
 
+v1 is complete. What comes next — tracking robustness (MOT metrics + camera
+motion compensation), dynamic homography for panning cameras, and the
+"Hudl-lite" game-report product — is planned in [ROADMAP.md](ROADMAP.md).
+
 ## License
 
 [MIT](LICENSE)
