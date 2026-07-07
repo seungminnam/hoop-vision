@@ -8,6 +8,10 @@ benchmarked against the YOLO baseline.
 > _NBA Forecast Lab predicted games from tabular stats; Hoop Vision extracts those
 > stats from raw video. Statistics → perception._
 
+![Hoop Vision demo — tracking, teams, and live minimap on a static game clip](docs/demo.gif)
+*Live output on a verified static clip: ByteTrack IDs with team colors, rim
+detection, and the homography minimap (picture-in-picture).*
+
 ![Fine-tuned detection on an NBA broadcast frame](docs/sample_detection.jpg)
 *Fine-tuned YOLO11n on a held-out val frame: 10 players, ball, and rim detected —
 referees excluded by design.*
@@ -67,7 +71,7 @@ uv run python scripts/auto_calibrate.py clip.mp4 --weights hoopvision_best.pt \
 uv run python -m hoopvision.pipeline clip.mp4 --weights hoopvision_best.pt \
     --calibration calib.json --output out
 
-# Demo app:
+# Demo app (precomputed samples + local pipeline runner):
 uv run streamlit run app/streamlit_app.py
 
 # Tests / lint:
@@ -132,6 +136,19 @@ The from-scratch detector is *faster* but far less accurate on 165 training
 images — the write-up documents why (pretraining, augmentation recipe,
 multi-scale assignment), which is the point of the chapter.
 
+## Demo app
+
+The Streamlit app explores precomputed sample results (3 clips: tracking +
+teams, minimap, shot events) and can run the full pipeline locally on an
+uploaded clip.
+
+Deploying to **Streamlit Community Cloud (free)** takes one connection:
+[share.streamlit.io](https://share.streamlit.io) → *New app* → repo
+`seungminnam/hoop-vision`, branch `main`, entrypoint `app/streamlit_app.py`.
+[`app/requirements.txt`](app/requirements.txt) keeps the hosted environment
+minimal (Streamlit only — the cloud app serves precomputed samples; video
+inference exceeds the free tier and stays local, as noted in the app).
+
 ## $0 operations
 
 Everything in this project runs on free tiers:
@@ -181,7 +198,9 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
   shot-chart court coordinates pending W3 calibration)
 - [x] W5 — from-scratch detector benchmark (player AP50 0.578 vs YOLO 0.965;
   table above, analysis in `scratch_detector/README.md`)
-- [ ] W6 — deployed demo + write-up
+- [ ] W6 — deployed demo + write-up (app, samples, demo GIF, and minimal cloud
+  requirements are ready; final step = connecting the repo on
+  share.streamlit.io, then the public URL lands here)
 
 ## License
 
