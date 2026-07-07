@@ -58,6 +58,11 @@ uv run python -m hoopvision.pipeline clip.mp4 --output out
 # 2. Calibrate the court on a fixed-camera clip (click 4 landmarks):
 uv run python scripts/calibrate.py clip.mp4 --output calib.json
 
+# 2b. ...or recover it automatically from the painted key (colored paint,
+#     static lined court) — writes an overlay JPEG so you can inspect the fit:
+uv run python scripts/auto_calibrate.py clip.mp4 --weights hoopvision_best.pt \
+    --output calib.json --overlay check.jpg
+
 # 3. Full pipeline with minimap + shot analytics (needs fine-tuned weights):
 uv run python -m hoopvision.pipeline clip.mp4 --weights hoopvision_best.pt \
     --calibration calib.json --output out
@@ -143,7 +148,7 @@ Everything in this project runs on free tiers:
 ```
 src/hoopvision/     pipeline modules (ingest → detect → track → teams → court → events → viz)
 scratch_detector/   from-scratch CenterNet-style detector + training/eval
-scripts/            calibrate, download_data, finetune_yolo, benchmark
+scripts/            calibrate, auto_calibrate, download_data, finetune_yolo, benchmark
 app/                Streamlit demo (+ precomputed samples for the free-tier deploy)
 tests/              unit tests for the pure-logic modules (court, events, teams)
 data/               gitignored; dataset/clip documentation in data/README.md
