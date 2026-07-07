@@ -8,8 +8,9 @@ benchmarked against the YOLO baseline.
 > _NBA Forecast Lab predicted games from tabular stats; Hoop Vision extracts those
 > stats from raw video. Statistics → perception._
 
-<!-- demo GIF goes here at W6: docs/demo.gif -->
-📽️ *Demo GIF and deployed app link coming with milestone W6 (Aug 2026).*
+![Fine-tuned detection on an NBA broadcast frame](docs/sample_detection.jpg)
+*Fine-tuned YOLO11n on a held-out val frame: 10 players, ball, and rim detected —
+referees excluded by design. (Demo GIF with tracking + minimap coming at W6.)*
 
 ## What it does
 
@@ -74,13 +75,22 @@ Numbers appear here only when measured (every figure must be reproducible by
 `scripts/benchmark.py`, `scripts/finetune_yolo.py` logs, or a committed notebook —
 no placeholders presented as results).
 
-**Detection (fine-tuned YOLO11n, Roboflow val split)** — *pending W2*
+**Detection (fine-tuned YOLO11n)** — measured 2026-07-07 on the
+[basketball-computer-vision v14](https://universe.roboflow.com/basketballcomputervision/basketball-computer-vision/dataset/14)
+val split (46 images; small dataset — 235 images total, so treat as indicative):
 
 | class | AP50 | AP50-95 |
 |---|---|---|
-| player | TBD | TBD |
-| ball | TBD | TBD |
-| rim | TBD | TBD |
+| player | 0.965 | 0.602 |
+| ball | 0.814 | 0.423 |
+| rim | 0.995 | 0.512 |
+| **all (incl. referee)** | **0.919** | **0.526** |
+
+Training: `scripts/finetune_yolo.py --epochs 60 --imgsz 960`, early-stopped at
+epoch 42, 0.5 h on Apple M4 (MPS) — no cloud GPU needed for this dataset size.
+Inference: **30.6 FPS** at 640 px on M4 MPS, 2.59 M params (`scripts/benchmark.py`).
+Ball is the weakest class as expected (small object, motion blur) — this is why
+the pipeline has the ball-coverage quality gate.
 
 **Shot detection vs hand labels (≥3 clips)** — *pending W4*
 
@@ -128,7 +138,8 @@ data/               gitignored; dataset/clip documentation in data/README.md
 Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones):
 
 - [x] W1 — baseline pipeline: detection, ByteTrack IDs, annotated video, tests
-- [ ] W2 — fine-tune YOLO on player/ball/rim + team assignment metrics
+- [x] W2a — fine-tune YOLO11n on player/ball/rim (mAP50 0.919, table above)
+- [ ] W2b — team assignment verified on real game clips
 - [ ] W3 — homography + minimap on fixed-camera clips
 - [ ] W4 — shot events vs hand-labeled ground truth
 - [ ] W5 — from-scratch detector benchmark
