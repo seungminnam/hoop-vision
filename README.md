@@ -10,7 +10,11 @@ benchmarked against the YOLO baseline.
 
 ![Fine-tuned detection on an NBA broadcast frame](docs/sample_detection.jpg)
 *Fine-tuned YOLO11n on a held-out val frame: 10 players, ball, and rim detected —
-referees excluded by design. (Demo GIF with tracking + minimap coming at W6.)*
+referees excluded by design.*
+
+![Live minimap on a static game clip](docs/sample_minimap.jpg)
+*Court homography in action during a free throw: tracked players project onto
+the 2D halfcourt (picture-in-picture) with team colors and the rim marker.*
 
 ## What it does
 
@@ -153,8 +157,10 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
 - [x] W2a — fine-tune YOLO11n on player/ball/rim (mAP50 0.919, table above)
 - [x] W2b — team assignment verified on a real game clip (white vs red jerseys
   mostly separated at 360p; occasional flips on small crops — noted limitation)
-- [ ] W3 — homography + minimap (static clips ready; needs one
-  `scripts/calibrate.py` click session on `data/clips/pickup_seg1.mp4`)
+- [x] W3 — homography + minimap, verified on a static lined-court clip
+  (`docs/sample_minimap.jpg`; calibration = paint-region corners + curve
+  refinement, paint-corner reprojection 1.7 ft — above the 1 ft target because
+  the source is 360p; see `calib_hudl_static2.json`)
 - [x] W4 — shot events vs hand-labeled ground truth (80%/80% on 3 clips, n=5;
   shot-chart court coordinates pending W3 calibration)
 - [ ] W5 — from-scratch detector benchmark
