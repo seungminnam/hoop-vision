@@ -167,13 +167,14 @@ benchmarks.
 | Scratch detector too weak to be presentable | Medium | That's acceptable — frame the chapter as "why YOLO wins"; report the gap honestly |
 | Streamlit Cloud can't run video inference | Medium | Ship pre-computed results for sample clips; app becomes an explorer, not a live runner |
 
-## 9. Resume bullet targets (fill numbers when measured)
+## 9. Resume bullets (numbers measured; sources in README results tables)
 
 - "Built an end-to-end basketball video-analytics pipeline (YOLO fine-tuned to
-  player/ball/rim, __ mAP50; ByteTrack multi-object tracking) that maps players to court
+  player/ball/rim, 0.92 mAP50; ByteTrack multi-object tracking) that maps players to court
   coordinates via homography and auto-generates shot charts from raw game footage."
 - "Implemented an anchor-free object detector from scratch in PyTorch and benchmarked it
-  against the fine-tuned YOLO baseline (__ vs __ mAP50, __ vs __ FPS), documenting the
-  architecture trade-offs."
-- "Detected shot attempts/outcomes with a trajectory state machine at __% recall against
-  hand-labeled ground truth; shipped an interactive Streamlit demo."
+  against the fine-tuned YOLO baseline (0.58 vs 0.97 player AP50, 40 vs 34 FPS on Apple
+  M4 MPS), documenting the architecture trade-offs."
+- "Detected shot attempts/outcomes with a trajectory state machine at 80% precision and
+  80% recall (n=5) against hand-labeled ground truth, 4/4 outcomes correct; shipped an
+  interactive Streamlit demo."

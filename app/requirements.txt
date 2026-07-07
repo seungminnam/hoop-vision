@@ -1,0 +1,7 @@
+# Streamlit Community Cloud deps — intentionally minimal.
+#
+# Community Cloud searches the entrypoint directory before the repo root, so
+# this file (not the root uv.lock with the full torch/ultralytics stack) drives
+# the deployed environment: the hosted app only serves precomputed samples.
+# "Run on my clip" needs the full local env (uv sync) and says so in the UI.
+streamlit>=1.40
