@@ -28,8 +28,9 @@ def main() -> None:
     parser.add_argument("--imgsz", type=int, default=960, help="ball/rim are small")
     parser.add_argument("--batch", type=int, default=-1, help="-1 = auto")
     parser.add_argument("--name", default="hoopvision")
-    parser.add_argument("--device", default=None,
-                        help="cuda/mps/cpu; default: auto (MPS on Apple Silicon)")
+    parser.add_argument(
+        "--device", default=None, help="cuda/mps/cpu; default: auto (MPS on Apple Silicon)"
+    )
     args = parser.parse_args()
 
     from ultralytics import YOLO
