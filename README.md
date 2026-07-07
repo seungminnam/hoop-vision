@@ -119,7 +119,18 @@ whose arc stayed outside the horizontal attempt window; the false positive was
 a high pass crossing above rim level. Ball-track coverage on these clips:
 42–77% (vs 2% on 360p footage — resolution is the ball detector's bottleneck).
 
-**Scratch detector vs YOLO** — *pending W5* (table in [scratch_detector/README.md](scratch_detector/README.md))
+**Scratch detector vs YOLO** — measured 2026-07-08, same val split and clip,
+Apple M4 MPS (`scripts/benchmark.py`; details + training curves in
+[scratch_detector/README.md](scratch_detector/README.md)):
+
+| model | player AP50 | FPS | params (M) |
+|---|---|---|---|
+| fine-tuned YOLO11n | 0.965 | 34.0 | 2.59 |
+| scratch CenterNet-lite (plain PyTorch) | 0.578 | 40.1 | 12.84 |
+
+The from-scratch detector is *faster* but far less accurate on 165 training
+images — the write-up documents why (pretraining, augmentation recipe,
+multi-scale assignment), which is the point of the chapter.
 
 ## $0 operations
 
@@ -168,7 +179,8 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
   the source is 360p; see `calib_hudl_static2.json`)
 - [x] W4 — shot events vs hand-labeled ground truth (80%/80% on 3 clips, n=5;
   shot-chart court coordinates pending W3 calibration)
-- [ ] W5 — from-scratch detector benchmark
+- [x] W5 — from-scratch detector benchmark (player AP50 0.578 vs YOLO 0.965;
+  table above, analysis in `scratch_detector/README.md`)
 - [ ] W6 — deployed demo + write-up
 
 ## License
