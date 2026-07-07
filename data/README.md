@@ -33,6 +33,24 @@ Note: the source video repositions its camera a few times between plays; the
 segments above were cut from a 96-second window (t=525–621s) verified static
 by ceiling-strip phase correlation + first/last frame blending.
 
+**Homography caveat (pickup clips):** this pickup game is played *cross-court*
+on a side basket — the painted floor lines belong to the main court (rotated
+90°), so the played halfcourt has no usable landmarks. These clips support
+detection/tracking/teams/shot-events but not court calibration; the W3
+minimap uses a clip on a properly lined court instead.
+
+| Clip | Source URL | Camera | Held-out? | Notes |
+|---|---|---|---|---|
+| hudl_static1 (t=599–619s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | static window (verified) | no | lined court; W3 minimap |
+| hudl_static2 (t=1616–1637s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | static window (verified) | no | lined court; calibration `calib_hudl_static2.json` |
+
+The Hudl auto-tracking camera holds still in two ≥20 s windows (found by
+1 fps ceiling-strip phase correlation over the full game, verified by frame
+blending). Calibration was recovered from the paint region's segmented
+corners, then refined against the visible 3-pt arc / center circle / halfcourt
+line; at 360p the paint-corner reprojection error is 1.7 ft (target <1 ft
+needs a higher-resolution source — documented limitation).
+
 Ground-truth shot labels are a simple CSV per clip: `time_s,outcome` with
 outcome ∈ {made, missed} — used by W4 precision/recall reporting.
 
