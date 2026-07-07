@@ -1,0 +1,11 @@
+{
+  "video": "hudl_seg1.mp4",
+  "fps": 30.0,
+  "stride": 1,
+  "frames_processed": 750,
+  "rim_detected": true,
+  "ball_coverage": 0.023,
+  "shot_analytics_available": false,
+  "reason": "ball track coverage 2% < 40% quality gate",
+  "events": []
+}

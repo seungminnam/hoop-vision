@@ -139,7 +139,8 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
 
 - [x] W1 — baseline pipeline: detection, ByteTrack IDs, annotated video, tests
 - [x] W2a — fine-tune YOLO11n on player/ball/rim (mAP50 0.919, table above)
-- [ ] W2b — team assignment verified on real game clips
+- [x] W2b — team assignment verified on a real game clip (white vs red jerseys
+  mostly separated at 360p; occasional flips on small crops — noted limitation)
 - [ ] W3 — homography + minimap on fixed-camera clips
 - [ ] W4 — shot events vs hand-labeled ground truth
 - [ ] W5 — from-scratch detector benchmark

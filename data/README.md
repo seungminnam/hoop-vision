@@ -23,7 +23,9 @@ never used for tuning decisions.
 
 | Clip | Source URL | Camera | Held-out? | Ground-truth labels |
 |---|---|---|---|---|
-| TBD | | fixed | yes | `labels/<clip>.csv` |
+| hudl_seg1 (t=1115–1140s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | auto-tracking (Hudl) — pans slowly; unsuitable for homography | no | — (ball coverage 2% at 360p; shot analytics gated off) |
+| hudl_seg2 (t=300–325s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | auto-tracking (Hudl) | no | — |
+| TBD (need true static tripod clip for W3/W4) | | fixed | yes | `labels/<clip>.csv` |
 
 Ground-truth shot labels are a simple CSV per clip: `time_s,outcome` with
 outcome ∈ {made, missed} — used by W4 precision/recall reporting.
