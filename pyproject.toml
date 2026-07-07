@@ -13,6 +13,9 @@ dependencies = [
     "supervision>=0.29,<0.30",
     "streamlit>=1.40",
     "matplotlib>=3.9",
+    # already pulled in by ultralytics, but scripts/auto_calibrate.py uses it
+    # directly (least_squares), so declare it
+    "scipy>=1.11",
 ]
 
 [dependency-groups]
