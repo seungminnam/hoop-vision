@@ -8,6 +8,9 @@ benchmarked against the YOLO baseline.
 > _NBA Forecast Lab predicted games from tabular stats; Hoop Vision extracts those
 > stats from raw video. Statistics → perception._
 
+**🎮 [Live demo](https://hoop-vision.streamlit.app/)** — explore precomputed
+sample results (tracking, minimap, shot chart) in the browser, free tier.
+
 ![Hoop Vision demo — tracking, teams, and live minimap on a static game clip](docs/demo.gif)
 *Live output on a verified static clip: ByteTrack IDs with team colors, rim
 detection, and the homography minimap (picture-in-picture).*
@@ -138,12 +141,13 @@ multi-scale assignment), which is the point of the chapter.
 
 ## Demo app
 
+**Live: [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)**
+
 The Streamlit app explores precomputed sample results (3 clips: tracking +
 teams, minimap, shot events) and can run the full pipeline locally on an
 uploaded clip.
 
-Deploying to **Streamlit Community Cloud (free)** takes one connection:
-[share.streamlit.io](https://share.streamlit.io) → *New app* → repo
+Deployed on **Streamlit Community Cloud (free)**: repo
 `seungminnam/hoop-vision`, branch `main`, entrypoint `app/streamlit_app.py`.
 [`app/requirements.txt`](app/requirements.txt) keeps the hosted environment
 minimal (Streamlit only — the cloud app serves precomputed samples; video
@@ -198,9 +202,8 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
   shot-chart court coordinates pending W3 calibration)
 - [x] W5 — from-scratch detector benchmark (player AP50 0.578 vs YOLO 0.965;
   table above, analysis in `scratch_detector/README.md`)
-- [ ] W6 — deployed demo + write-up (app, samples, demo GIF, and minimal cloud
-  requirements are ready; final step = connecting the repo on
-  share.streamlit.io, then the public URL lands here)
+- [x] W6 — deployed demo + write-up: live at
+  [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)
 
 ## License
 
