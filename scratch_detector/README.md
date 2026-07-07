@@ -31,15 +31,38 @@ uv run python scripts/benchmark.py --weights hoopvision_best.pt --video demo.mp4
     --scratch-weights scratch_detector/runs/best.pt
 ```
 
-## Results (to be measured — see honesty rule in ROADMAP.md)
+## Results
+
+Measured 2026-07-08 on the basketball-computer-vision v14 val split (46
+images); FPS on the same 1080p clip for both models, Apple M4 (MPS), via
+`scripts/benchmark.py`:
 
 | model | player AP50 | FPS (M-series MPS) | params (M) |
 |---|---|---|---|
-| fine-tuned YOLO11n | TBD | TBD | TBD |
-| scratch CenterNet-lite | TBD | TBD | TBD |
+| fine-tuned YOLO11n | 0.965 | 34.0 | 2.59 |
+| scratch CenterNet-lite | 0.578 | 40.1 | 12.84 |
 
-Training curves: `runs/losses.csv` (plotted in the write-up).
+Training: 40 epochs, batch 16, ~34 s/epoch on M4 (≈23 min total — no cloud
+GPU needed). `best.pt` is the min-val-loss checkpoint (epoch 9); after that
+the model memorizes the 165 training images while val loss climbs back up:
 
-Expected outcome: the scratch detector loses to YOLO — the write-up documents
-*why* (anchor-free head vs. YOLO's TAL assignment, augmentation gap, multi-scale
-features), which is the actual point of the chapter.
+![training curves](../docs/scratch_losses.png)
+
+## Why it loses (the actual point of the chapter)
+
+- **Data appetite.** The ImageNet-pretrained ResNet18 backbone helps, but the
+  three upsampling blocks and all three heads start from random weights, and
+  165 images can't feed them — hence the early overfit at epoch 9. YOLO11n
+  starts from COCO weights where every stage has already seen ~118k images
+  of people.
+- **Augmentation gap.** This trainer does flips + color jitter; ultralytics
+  layers mosaic, mixup, scale/translate jitter and more on top, which is worth
+  a lot of effective dataset size on 165 images.
+- **Assignment & head design.** Penalty-reduced focal loss on a single-scale
+  stride-4 heatmap vs. YOLO's task-aligned assignment over multi-scale
+  features — small/overlapping players suffer most at a single scale.
+- **Speed is not the bottleneck.** The scratch model is actually *faster*
+  (40 vs 34 FPS) despite 5× the parameters: a plain ResNet18 + 3×3-max-pool
+  decode is memory-friendly on MPS and skips YOLO's post-processing — the
+  accuracy gap, not throughput, is what pretraining and a mature training
+  recipe buy.
