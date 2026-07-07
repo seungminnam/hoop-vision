@@ -8,6 +8,8 @@ __pycache__/
 # Data & model weights (never commit raw video or weights)
 data/*
 !data/README.md
+!data/labels/
+!data/labels/**
 *.pt
 *.onnx
 runs/
