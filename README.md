@@ -92,11 +92,23 @@ Inference: **30.6 FPS** at 640 px on M4 MPS, 2.59 M params (`scripts/benchmark.p
 Ball is the weakest class as expected (small object, motion blur) — this is why
 the pipeline has the ball-coverage quality gate.
 
-**Shot detection vs hand labels (≥3 clips)** — *pending W4*
+**Shot detection vs hand labels** — measured 2026-07-07 on three fixed-camera
+pickup-game clips (1080p, static camera verified by frame-blend test). Ground
+truth: frame-by-frame review (`data/labels/*.csv`); numbers reproduced by
+`scripts/eval_shots.py`:
 
-| clip | camera | attempts (GT) | precision | recall |
-|---|---|---|---|---|
-| TBD | fixed | TBD | TBD | TBD |
+| clip | GT attempts | TP | FP | FN | outcomes correct |
+|---|---|---|---|---|---|
+| pickup_seg1 | 2 | 2 | 0 | 0 | 2/2 |
+| pickup_seg2 | 1 | 1 | 0 | 0 | 1/1 |
+| pickup_seg3 | 2 | 1 | 1 | 1 | 1/1 |
+| **overall** | **5** | **4** | **1** | **1** | **4/4** |
+
+Attempt **precision 80% / recall 80%** (n=5 — small sample, stated plainly);
+made/missed outcome accuracy 4/4 on matched attempts. The miss was an airball
+whose arc stayed outside the horizontal attempt window; the false positive was
+a high pass crossing above rim level. Ball-track coverage on these clips:
+42–77% (vs 2% on 360p footage — resolution is the ball detector's bottleneck).
 
 **Scratch detector vs YOLO** — *pending W5* (table in [scratch_detector/README.md](scratch_detector/README.md))
 
@@ -141,8 +153,10 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
 - [x] W2a — fine-tune YOLO11n on player/ball/rim (mAP50 0.919, table above)
 - [x] W2b — team assignment verified on a real game clip (white vs red jerseys
   mostly separated at 360p; occasional flips on small crops — noted limitation)
-- [ ] W3 — homography + minimap on fixed-camera clips
-- [ ] W4 — shot events vs hand-labeled ground truth
+- [ ] W3 — homography + minimap (static clips ready; needs one
+  `scripts/calibrate.py` click session on `data/clips/pickup_seg1.mp4`)
+- [x] W4 — shot events vs hand-labeled ground truth (80%/80% on 3 clips, n=5;
+  shot-chart court coordinates pending W3 calibration)
 - [ ] W5 — from-scratch detector benchmark
 - [ ] W6 — deployed demo + write-up
 

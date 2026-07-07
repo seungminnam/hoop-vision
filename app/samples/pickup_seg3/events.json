@@ -1,0 +1,28 @@
+{
+  "video": "pickup_seg3.mp4",
+  "fps": 29.97002997002997,
+  "stride": 1,
+  "frames_processed": 899,
+  "rim_detected": true,
+  "ball_coverage": 0.565,
+  "shot_analytics_available": true,
+  "reason": "",
+  "events": [
+    {
+      "frame": 430,
+      "time_s": 14.348,
+      "outcome": "missed",
+      "shooter_track_id": null,
+      "shooter_team": null,
+      "court_xy": null
+    },
+    {
+      "frame": 702,
+      "time_s": 23.423,
+      "outcome": "made",
+      "shooter_track_id": null,
+      "shooter_team": null,
+      "court_xy": null
+    }
+  ]
+}
