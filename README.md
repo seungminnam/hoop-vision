@@ -153,10 +153,27 @@ predictions, IoU 0.5):
 
 So on clean footage the tracker keeps the real players fairly stable (1 switch,
 IDR 0.97) but splinters their identities across many short IDs (IDP 0.585) — the
-fragmentation the demo shows. That is the number the v1.1 fixes must beat.
-Improvements are tracked in [ROADMAP.md](ROADMAP.md) v1.1 (appearance embedding
-and track-management to raise IDP here; camera-motion compensation for the
-panning clip).
+fragmentation the demo shows.
+
+Fix #1 — appearance track stitching (`src/hoopvision/stitch.py`): an offline
+pass re-attaches fragmented tracks that end and reappear nearby within a few
+frames with a similar torso-color histogram (union-find, disjoint frame ranges
+so distinct players never merge). On by default in the pipeline; before/after
+on the same GT:
+
+| | IDF1 | IDP / IDR | ID switches | unique IDs | median track life |
+|---|---|---|---|---|---|
+| raw ByteTrack | 0.730 | 0.585 / 0.970 | 1 | 19 | 1.8 s |
+| + stitching | **0.752** | 0.603 / **1.000** | **0** | **14** | **4.4 s** |
+
+The IDF1 gain is modest (+2 pts — on a clean clip ByteTrack already had one
+switch, so frame-weighted identity was already decent), but the fragmentation
+metrics move clearly: **median track life 2.4× longer, 26% fewer IDs, zero
+switches, and no regression** (no distinct players were wrongly merged). MOTA is
+unchanged (0.341 → 0.342) because it is dominated by out-of-scope detector FPs,
+which stitching does not remove. Remaining v1.1 / v2 work in
+[ROADMAP.md](ROADMAP.md): camera-motion compensation for the panning clip, then
+the downstream stats.
 
 **Scratch detector vs YOLO** — measured 2026-07-08, same val split and clip,
 Apple M4 MPS (`scripts/benchmark.py`; details + training curves in

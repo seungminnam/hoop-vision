@@ -38,6 +38,18 @@ def color_feature(crop_bgr: np.ndarray) -> np.ndarray:
     return lab.reshape(-1, 3).mean(axis=0).astype(np.float32)
 
 
+def color_histogram(crop_bgr: np.ndarray, bins: int = 4) -> np.ndarray:
+    """L2-normalized LAB color histogram of a torso crop (bins^3 vector).
+
+    More discriminative than the mean color (it keeps the jersey/shorts colour
+    distribution), which is what track stitching needs to tell players apart.
+    """
+    lab = cv2.cvtColor(crop_bgr, cv2.COLOR_BGR2LAB)
+    hist = cv2.calcHist([lab], [0, 1, 2], None, [bins] * 3, [0, 256] * 3).flatten()
+    norm = float(np.linalg.norm(hist))
+    return (hist / norm).astype(np.float32) if norm > 0 else hist.astype(np.float32)
+
+
 def kmeans_two(features: np.ndarray, seed: int = 0) -> np.ndarray:
     """Cluster (N, D) float32 features into 2 groups; returns labels (N,).
 
@@ -79,6 +91,11 @@ class TeamAssigner:
         """Direct feature injection (used by unit tests)."""
         self._features.append(np.asarray(feature, dtype=np.float32))
         self._track_ids.append(track_id)
+
+    def remap_ids(self, remap: dict[int, int]) -> None:
+        """Rewrite observed track ids (call after stitching, before fit) so a
+        stitched player's color votes aggregate under its canonical id."""
+        self._track_ids = [remap.get(t, t) for t in self._track_ids]
 
     def fit(self) -> dict[int, int]:
         if not self._features:

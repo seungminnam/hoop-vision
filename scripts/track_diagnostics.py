@@ -152,6 +152,11 @@ def main() -> None:
     parser.add_argument("--stride", type=int, default=1)
     parser.add_argument("--max-frames", type=int, default=None)
     parser.add_argument(
+        "--no-stitch",
+        action="store_true",
+        help="disable appearance track stitching (raw ByteTrack, for before/after)",
+    )
+    parser.add_argument(
         "--dump-mot",
         default=None,
         help="directory to also write <clip>.txt MOTChallenge predictions",
@@ -178,7 +183,12 @@ def main() -> None:
     print("|" + "|".join(["---"] * len(cols)) + "|")
     for video in args.videos:
         analysis = analyze(
-            video, detector, stride=args.stride, max_frames=args.max_frames, teams=False
+            video,
+            detector,
+            stride=args.stride,
+            max_frames=args.max_frames,
+            teams=False,
+            stitch_tracks=not args.no_stitch,
         )
         frames = _frames_from_analysis(analysis)
         stats = diagnose(frames, analysis.effective_fps)
