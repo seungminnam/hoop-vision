@@ -28,10 +28,11 @@ the 2D halfcourt (picture-in-picture) with team colors and the rim marker.*
 | Capability | How |
 |---|---|
 | Detect players / ball / rim | YOLO11n fine-tuned on a Roboflow basketball dataset |
-| Track players with stable IDs | ByteTrack (via `supervision`) over player detections |
+| Track players with stable IDs | ByteTrack + appearance track stitching (`stitch.py`) |
 | Assign teams | jersey-crop LAB color features + k-means (k=2), smoothed per track |
-| Map players to court coordinates | manual 4-point homography → NBA halfcourt (50×47 ft) |
+| Map players to court coordinates | manual or auto homography → NBA halfcourt (50×47 ft) |
 | Detect shot attempts & outcomes | trajectory state machine over ball + rim tracks |
+| Player movement stats | per-track distance, avg/top speed, occupancy heatmap (`stats.py`) |
 | Render | annotated video + picture-in-picture minimap + shot chart |
 | From-scratch chapter | CenterNet-style detector in plain PyTorch ([details](scratch_detector/README.md)) |
 
@@ -174,6 +175,29 @@ unchanged (0.341 → 0.342) because it is dominated by out-of-scope detector FPs
 which stitching does not remove. Remaining v1.1 / v2 work in
 [ROADMAP.md](ROADMAP.md): camera-motion compensation for the panning clip, then
 the downstream stats.
+
+**Player movement stats** — with stable tracks + a court homography, each
+track becomes a path in feet, so `scripts/player_stats.py` reports distance,
+speed, and a court-occupancy heatmap in physical units. Measured on
+`hudl_static2` (calibrated static clip); the longest-lived tracks (the
+reliable per-player rows) over a 21 s possession:
+
+| track | team | seconds | distance (ft) | avg (mph) | top (mph) |
+|---|---|---|---|---|---|
+| 3 | 1 | 21.0 | 105.3 | 3.4 | 10.4 |
+| 8 | 0 | 20.8 | 96.2 | 3.2 | 12.3 |
+| 9 | 1 | 20.9 | 81.7 | 2.7 | 9.0 |
+
+![Court occupancy heatmap](docs/occupancy_hudl_static2.png)
+
+Distances and walking-to-jogging average speeds (2–3 mph, top bursts ~10–12 mph)
+are physically sensible for a half-court set, and the heatmap concentrates in
+the paint and along the arc as expected. Honest caveats: numbers are per
+*track* not per named player (jersey OCR is future work), so short tracks are
+still fragments; the 360p source jitters, which inflates top-speed; and some
+tracks are bench/non-players. This is the first "advanced stat" and the bridge
+to game-flow features — see [docs/reference-analysis.md](docs/reference-analysis.md)
+and [ROADMAP.md](ROADMAP.md).
 
 **Scratch detector vs YOLO** — measured 2026-07-08, same val split and clip,
 Apple M4 MPS (`scripts/benchmark.py`; details + training curves in
