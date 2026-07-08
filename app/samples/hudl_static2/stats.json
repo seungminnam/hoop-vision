@@ -1,0 +1,133 @@
+{
+  "video": "hudl_static2",
+  "fps": 30.0,
+  "frames": 630,
+  "players": [
+    {
+      "track_id": 3,
+      "team": 1,
+      "frames": 620,
+      "seconds": 21.0,
+      "distance_ft": 105.3,
+      "avg_speed_mph": 3.4,
+      "top_speed_mph": 10.4
+    },
+    {
+      "track_id": 8,
+      "team": 0,
+      "frames": 509,
+      "seconds": 20.8,
+      "distance_ft": 96.2,
+      "avg_speed_mph": 3.2,
+      "top_speed_mph": 12.3
+    },
+    {
+      "track_id": 9,
+      "team": 1,
+      "frames": 513,
+      "seconds": 20.9,
+      "distance_ft": 81.7,
+      "avg_speed_mph": 2.7,
+      "top_speed_mph": 9.0
+    },
+    {
+      "track_id": 20,
+      "team": 0,
+      "frames": 370,
+      "seconds": 14.6,
+      "distance_ft": 67.4,
+      "avg_speed_mph": 3.1,
+      "top_speed_mph": 9.9
+    },
+    {
+      "track_id": 2,
+      "team": 0,
+      "frames": 532,
+      "seconds": 18.3,
+      "distance_ft": 52.6,
+      "avg_speed_mph": 2.0,
+      "top_speed_mph": 8.0
+    },
+    {
+      "track_id": 24,
+      "team": 0,
+      "frames": 197,
+      "seconds": 8.7,
+      "distance_ft": 52.5,
+      "avg_speed_mph": 4.1,
+      "top_speed_mph": 15.9
+    },
+    {
+      "track_id": 6,
+      "team": 0,
+      "frames": 577,
+      "seconds": 18.4,
+      "distance_ft": 49.0,
+      "avg_speed_mph": 1.8,
+      "top_speed_mph": 7.2
+    },
+    {
+      "track_id": 1,
+      "team": 1,
+      "frames": 255,
+      "seconds": 3.5,
+      "distance_ft": 37.6,
+      "avg_speed_mph": 7.3,
+      "top_speed_mph": 16.4
+    },
+    {
+      "track_id": 23,
+      "team": 0,
+      "frames": 228,
+      "seconds": 9.7,
+      "distance_ft": 30.0,
+      "avg_speed_mph": 2.1,
+      "top_speed_mph": 12.7
+    },
+    {
+      "track_id": 21,
+      "team": 1,
+      "frames": 127,
+      "seconds": 4.4,
+      "distance_ft": 27.0,
+      "avg_speed_mph": 4.2,
+      "top_speed_mph": 11.3
+    },
+    {
+      "track_id": 4,
+      "team": 0,
+      "frames": 132,
+      "seconds": 4.7,
+      "distance_ft": 24.3,
+      "avg_speed_mph": 3.5,
+      "top_speed_mph": 6.8
+    },
+    {
+      "track_id": 10,
+      "team": 1,
+      "frames": 89,
+      "seconds": 6.3,
+      "distance_ft": 24.0,
+      "avg_speed_mph": 2.6,
+      "top_speed_mph": 9.4
+    },
+    {
+      "track_id": 5,
+      "team": 0,
+      "frames": 191,
+      "seconds": 7.3,
+      "distance_ft": 19.1,
+      "avg_speed_mph": 1.8,
+      "top_speed_mph": 6.3
+    },
+    {
+      "track_id": 17,
+      "team": 0,
+      "frames": 67,
+      "seconds": 2.2,
+      "distance_ft": 10.7,
+      "avg_speed_mph": 3.3,
+      "top_speed_mph": 9.1
+    }
+  ]
+}

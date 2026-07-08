@@ -230,9 +230,9 @@ multi-scale assignment), which is the point of the chapter.
 
 **Live: [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)**
 
-The Streamlit app explores precomputed sample results (3 clips: tracking +
-teams, minimap, shot events) and can run the full pipeline locally on an
-uploaded clip.
+The Streamlit app explores precomputed sample results (annotated video,
+minimap, shot chart, **player movement stats + occupancy heatmap**, events)
+and can run the full pipeline locally on an uploaded clip.
 
 Deployed on **Streamlit Community Cloud (free)**: repo
 `seungminnam/hoop-vision`, branch `main`, entrypoint `app/streamlit_app.py`.

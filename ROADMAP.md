@@ -226,10 +226,11 @@ prediction).
    made/missed timeline, per-track minutes-on-screen + distance/avg-speed in
    feet (homography makes these physical units). Rendered as a Streamlit
    report page + downloadable JSON/PNG. *Depends only on v1.1.*
-   - ◐ **Movement stats done** (`src/hoopvision/stats.py`, `scripts/player_stats.py`):
-     per-track distance, avg/top speed (mph), and a court occupancy heatmap.
-     Measured on `hudl_static2` (README). Remaining: fold into a Streamlit
-     report page + downloadable JSON.
+   - ✅ **Movement stats + demo tab done** (`src/hoopvision/stats.py`,
+     `scripts/player_stats.py --json/--heatmap`): per-track distance, avg/top
+     speed (mph), and a court occupancy heatmap, surfaced in the Streamlit app's
+     "Player stats" tab with a committed `stats.json` + `heatmap.png` sample.
+     Remaining slice-1 polish: made/missed timeline, downloadable report bundle.
 2. **Auto-highlights.** Cut ±N seconds around each shot event with ffmpeg,
    stitch a highlight reel; "made shots only" toggle. Cheap, high demo value.
 3. ⊘ **Per-player identity (jersey OCR) — blocked by data.** Feasibility
