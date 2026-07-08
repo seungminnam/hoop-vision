@@ -93,15 +93,16 @@ at a time with before/after in the same table.
   the tracker's fragmented output, click a box + type a number to relabel a
   whole track (collapses a fragment) or a single box (fixes a swap); undo,
   resume, save to MOTChallenge. Pure edit logic unit-tested.
-- ☐ **Ground-truth labels (next, needs a human review pass)** — label a short
-  window of a **static, high-res** clip (crowded 360p footage with benches and
-  refs-as-players is not worth hand-labeling). `pickup_label.mp4` (10 s of
-  `pickup_seg3`, ~19 IDs) is the chosen substrate; correct IDs in
-  `label_tracks.py`, commit under `data/labels/mot/gt/`. Then IDF1/MOTA in
-  README. Note: HOTA needs `trackeval`; `motmetrics` covers IDF1/MOTA today
-  — add HOTA when labels justify it.
-- **Accept:** baseline ByteTrack IDF1/MOTA for both clips in README once
-  labels land (diagnostics baseline is already there).
+- ✅ **Ground-truth labels** — `data/labels/mot/gt/pickup_label.txt`: hand-labeled
+  10 s / 300-frame window of `pickup_seg3` (9 players, static 1080p). Committed.
+  (Crowded 360p footage with benches / refs-as-players was judged not worth
+  hand-labeling — see the clip choice rationale in `data/README.md`.)
+- ✅ **ByteTrack baseline** — IDF1 **0.730**, 1 ID switch, IDP/IDR 0.585/0.970,
+  MOTA 0.341 (dragged by out-of-scope detector FPs) — recorded in README. The
+  story: identity is stable on clean footage but fragments across many IDs, so
+  the fix target is IDP. Note: HOTA needs `trackeval`; add it if labels justify.
+- **Accept:** ✅ baseline in README. Next: an improvement PR that raises IDF1/IDP
+  on this GT (§3.2), before/after in the same table.
 
 ### 3.2 Association upgrades (one PR each, measured)
 
