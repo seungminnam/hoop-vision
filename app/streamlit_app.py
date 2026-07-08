@@ -48,8 +48,8 @@ def show_results(folder: Path) -> None:
     events_file = find_one(folder, ["*events.json"])
     payload = json.loads(events_file.read_text()) if events_file else {}
 
-    video_tab, chart_tab, events_tab, about_tab = st.tabs(
-        ["🎬 Annotated video", "🗺️ Shot chart", "📋 Events", "ℹ️ How it works"]
+    video_tab, chart_tab, stats_tab, events_tab, about_tab = st.tabs(
+        ["🎬 Annotated video", "🗺️ Shot chart", "📊 Player stats", "📋 Events", "ℹ️ How it works"]
     )
 
     with video_tab:
@@ -82,6 +82,29 @@ def show_results(folder: Path) -> None:
         else:
             st.info("No shot chart for this sample.")
 
+    with stats_tab:
+        stats_file = find_one(folder, ["*stats.json"])
+        heatmap = find_one(folder, ["*heatmap*.png"])
+        stats = json.loads(stats_file.read_text()) if stats_file else {}
+        players = stats.get("players", [])
+        if players:
+            st.caption(
+                "Per-track distance and speed in physical units (homography → feet). "
+                "Per track, not per named player — short tracks are still fragments."
+            )
+            st.dataframe(players, width="stretch")
+            left, right = st.columns(2)
+            top = max(players, key=lambda p: p["distance_ft"])
+            fastest = max(players, key=lambda p: p["top_speed_mph"])
+            left.metric("Most distance", f"{top['distance_ft']:.0f} ft", f"track {top['track_id']}")
+            right.metric(
+                "Top speed", f"{fastest['top_speed_mph']:.1f} mph", f"track {fastest['track_id']}"
+            )
+        else:
+            st.info("No player stats for this sample (needs a calibrated fixed-camera clip).")
+        if heatmap is not None:
+            st.image(str(heatmap), caption="Court occupancy", width=460)
+
     with events_tab:
         events = payload.get("events", [])
         if events:
@@ -94,12 +117,15 @@ def show_results(folder: Path) -> None:
     with about_tab:
         st.markdown(
             """
-            **Pipeline** — YOLO (fine-tuned on player/ball/rim) → ByteTrack IDs →
-            jersey-color k-means team assignment → manual 4-point homography →
-            trajectory state machine for shot attempts/outcomes → shot chart.
+            **Pipeline** — YOLO (fine-tuned on player/ball/rim) → ByteTrack IDs +
+            appearance track stitching → jersey-color k-means team assignment →
+            homography → trajectory state machine for shot attempts/outcomes,
+            plus per-player distance/speed and a court occupancy heatmap.
 
             **Honesty gate** — if the ball track covers <40% of frames, the clip's
-            shot analytics are reported *unavailable* instead of guessing.
+            shot analytics are reported *unavailable* instead of guessing. Player
+            stats are per track (not per named player — jersey OCR needs numbered,
+            higher-res footage than these clips).
 
             **$0 stack** — Colab/Kaggle free GPUs (training), Roboflow Universe
             (dataset), Streamlit Community Cloud (this app), GitHub (repo + CI).

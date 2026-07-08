@@ -28,7 +28,11 @@ def main() -> None:
     parser.add_argument("--stride", type=int, default=1)
     parser.add_argument("--min-seconds", type=float, default=1.0, help="drop shorter tracks")
     parser.add_argument("--heatmap", default=None, help="output PNG for the occupancy heatmap")
+    parser.add_argument("--json", default=None, help="output JSON stats (for the demo app)")
     args = parser.parse_args()
+
+    import json as _json
+    from dataclasses import asdict
 
     from hoopvision.court import CourtCalibration
     from hoopvision.detect import YoloDetector
@@ -57,6 +61,16 @@ def main() -> None:
     if not stats:
         print("| (no track met the minimum duration) |")
 
+    if args.json:
+        payload = {
+            "video": Path(args.video).stem,
+            "fps": round(analysis.effective_fps, 2),
+            "frames": len(analysis.records),
+            "players": [asdict(s) for s in stats],
+        }
+        Path(args.json).write_text(_json.dumps(payload, indent=2))
+        print(f"\nSaved stats JSON: {args.json}")
+
     if args.heatmap:
         court_heatmap(
             analysis,
@@ -64,7 +78,7 @@ def main() -> None:
             output_path=args.heatmap,
             title=f"Player occupancy — {Path(args.video).stem}",
         )
-        print(f"\nSaved heatmap: {args.heatmap}")
+        print(f"Saved heatmap: {args.heatmap}")
 
 
 if __name__ == "__main__":
