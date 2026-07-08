@@ -70,6 +70,16 @@ MOTA, ID switches). Ground-truth labeling is pending — until then,
 `scripts/track_diagnostics.py` reports unsupervised tracking-health proxies
 that need no labels.
 
+To make the `gt/` files, use `scripts/label_tracks.py` (OpenCV): it bootstraps
+from the tracker's predictions and lets you relabel a whole track with one
+keystroke (the fragmentation fix) or a single box (a swap fix), then saves
+MOTChallenge GT. Example:
+
+```bash
+uv run python scripts/label_tracks.py data/clips/hudl_seg1.mp4 \
+    --boxes data/labels/mot/pred/hudl_seg1.txt
+```
+
 ## Ethics / legal
 
 - Clips are used for research/demo only.
