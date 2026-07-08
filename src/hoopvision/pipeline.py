@@ -15,12 +15,14 @@ import time
 from dataclasses import dataclass, field, replace
 from pathlib import Path
 
+import cv2
 import numpy as np
 
 from .court import CourtCalibration
-from .detect import BALL, RIM, Detection, Detector, YoloDetector
+from .detect import BALL, PLAYER, RIM, Detection, Detector, YoloDetector
 from .events import ShotConfig, ShotResult, detect_shots
 from .ingest import frames, video_info
+from .motion import CameraMotionEstimator, as_3x3, warp_box
 from .shotchart import render_shot_chart
 from .stitch import TrackletBuilder, stitch
 from .teams import TeamAssigner
@@ -89,6 +91,7 @@ def analyze(
     max_frames: int | None = None,
     teams: bool = True,
     stitch_tracks: bool = True,
+    compensate_camera: bool = False,
 ) -> ClipAnalysis:
     video = Path(video)
     info = video_info(video)
@@ -96,11 +99,27 @@ def analyze(
     tracker = PlayerTracker(frame_rate=info.fps / stride)
     assigner = TeamAssigner()
     builder = TrackletBuilder() if stitch_tracks else None
+    motion = CameraMotionEstimator() if compensate_camera else None
     analysis = ClipAnalysis(video=video, fps=info.fps, stride=stride)
 
     for ordinal, (index, frame) in enumerate(frames(video, stride=stride, max_frames=max_frames)):
         detections = detector.detect(frame)
-        players = tracker.update(detections)
+        if motion is not None:
+            # Track in a camera-stabilised reference frame, then map ids back.
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            player_boxes = [d.xyxy for d in detections if d.class_name == PLAYER]
+            ref_from_cur = motion.update(gray, player_boxes)
+            ref_dets = [
+                replace(d, xyxy=warp_box(d.xyxy, ref_from_cur))
+                for d in detections
+                if d.class_name == PLAYER
+            ]
+            cur_from_ref = np.linalg.inv(as_3x3(ref_from_cur))[:2]
+            players = [
+                replace(tp, xyxy=warp_box(tp.xyxy, cur_from_ref)) for tp in tracker.update(ref_dets)
+            ]
+        else:
+            players = tracker.update(detections)
         if builder is not None:
             for p in players:
                 builder.observe(p.track_id, ordinal, p.xyxy, frame)

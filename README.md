@@ -172,9 +172,23 @@ switch, so frame-weighted identity was already decent), but the fragmentation
 metrics move clearly: **median track life 2.4× longer, 26% fewer IDs, zero
 switches, and no regression** (no distinct players were wrongly merged). MOTA is
 unchanged (0.341 → 0.342) because it is dominated by out-of-scope detector FPs,
-which stitching does not remove. Remaining v1.1 / v2 work in
-[ROADMAP.md](ROADMAP.md): camera-motion compensation for the panning clip, then
-the downstream stats.
+which stitching does not remove.
+
+Fix attempt #2 — camera-motion compensation (`src/hoopvision/motion.py`): a
+global affine, estimated from background optical flow (players masked), maps
+each frame back to a reference so the tracker sees a stabilised scene. The
+estimator works — it recovers synthetic warps in tests and cleanly captures the
+real pan on the auto-tracking Hudl clip (below):
+
+![Estimated camera motion](docs/camera_motion_hudl_seg1.png)
+
+But honestly, **warping boxes into the reference frame did not improve tracking**
+on `hudl_seg1` (median track life 3.4 s → 3.0 s, unique IDs unchanged) — likely
+because this is a ball-following camera (pan is correlated with play) and the
+cumulative transform drifts over 750 frames. It is a no-op on static clips
+(identical numbers). So it stays **off by default** for tracking; its real
+payoff is as the reusable foundation for v2 dynamic homography (keeping the
+minimap aligned on a moving camera). A measured negative result, kept honest.
 
 **Player movement stats** — with stable tracks + a court homography, each
 track becomes a path in feet, so `scripts/player_stats.py` reports distance,

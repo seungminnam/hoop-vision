@@ -157,6 +157,11 @@ def main() -> None:
         help="disable appearance track stitching (raw ByteTrack, for before/after)",
     )
     parser.add_argument(
+        "--gmc",
+        action="store_true",
+        help="enable camera-motion compensation (for panning clips)",
+    )
+    parser.add_argument(
         "--dump-mot",
         default=None,
         help="directory to also write <clip>.txt MOTChallenge predictions",
@@ -189,6 +194,7 @@ def main() -> None:
             max_frames=args.max_frames,
             teams=False,
             stitch_tracks=not args.no_stitch,
+            compensate_camera=args.gmc,
         )
         frames = _frames_from_analysis(analysis)
         stats = diagnose(frames, analysis.effective_fps)
