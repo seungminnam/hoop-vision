@@ -12,7 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 import numpy as np
@@ -22,6 +22,7 @@ from .detect import BALL, RIM, Detection, Detector, YoloDetector
 from .events import ShotConfig, ShotResult, detect_shots
 from .ingest import frames, video_info
 from .shotchart import render_shot_chart
+from .stitch import TrackletBuilder, stitch
 from .teams import TeamAssigner
 from .track import PlayerTracker, TrackedPlayer
 from .viz import VideoSink, annotate_frame, overlay_minimap, render_minimap
@@ -87,23 +88,37 @@ def analyze(
     stride: int = 1,
     max_frames: int | None = None,
     teams: bool = True,
+    stitch_tracks: bool = True,
 ) -> ClipAnalysis:
     video = Path(video)
     info = video_info(video)
     detector = detector or YoloDetector()
     tracker = PlayerTracker(frame_rate=info.fps / stride)
     assigner = TeamAssigner()
+    builder = TrackletBuilder() if stitch_tracks else None
     analysis = ClipAnalysis(video=video, fps=info.fps, stride=stride)
 
-    for index, frame in frames(video, stride=stride, max_frames=max_frames):
+    for ordinal, (index, frame) in enumerate(frames(video, stride=stride, max_frames=max_frames)):
         detections = detector.detect(frame)
         players = tracker.update(detections)
+        if builder is not None:
+            for p in players:
+                builder.observe(p.track_id, ordinal, p.xyxy, frame)
         if teams:
             for p in players:
                 assigner.observe(p.track_id, frame, p.xyxy)
         analysis.records.append(
             FrameRecord(index, players, _best(detections, BALL), _best(detections, RIM))
         )
+
+    if builder is not None:
+        remap = stitch(builder.build())
+        for record in analysis.records:
+            record.players = [
+                replace(p, track_id=remap.get(p.track_id, p.track_id)) for p in record.players
+            ]
+        if teams:
+            assigner.remap_ids(remap)
 
     if teams:
         assigner.fit()

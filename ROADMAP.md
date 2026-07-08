@@ -111,14 +111,18 @@ at a time with before/after in the same table.
 
 ### 3.2 Association upgrades (one PR each, measured)
 
+- ✅ **Appearance track stitching** (`src/hoopvision/stitch.py`, done). Offline
+  post-process: re-attach fragmented tracklets by temporal + spatial +
+  torso-color-histogram gates (union-find, disjoint frame ranges). On by
+  default. Measured on `pickup_label`: IDF1 0.730 → **0.752**, switches 1 → 0,
+  median track life 1.8 s → **4.4 s**, unique IDs 19 → 14, no regression.
 1. **Camera-motion compensation (GMC).** Estimate per-frame global motion
    (e.g. `cv2.calcOpticalFlowPyrLK` on background corners or ECC on a
    downscaled gray frame) and warp Kalman predictions before matching —
-   BoT-SORT's trick. Directly targets the panning clip.
-2. **Appearance embedding.** Add a lightweight ReID feature (start free:
-   torso-crop color histogram / LAB stats already computed in `teams.py`;
-   stretch: OSNet-lite ONNX) and combine IoU + appearance cost. Targets
-   occlusion crossings.
+   BoT-SORT's trick. Directly targets the panning clip. *(next)*
+2. **Appearance embedding (in-tracker).** The stitching above is offline; a
+   stretch is folding a ReID/OSNet-lite cost into association itself for the
+   harder occlusion crossings.
 3. **Team-aware association.** Forbid/penalize matches across team labels
    using the k-means assignment. Cheap and complementary.
 - Keep the `Detector`-style pattern: tracker behind a small interface in
