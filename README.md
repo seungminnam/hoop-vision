@@ -226,6 +226,29 @@ The from-scratch detector is *faster* but far less accurate on 165 training
 images — the write-up documents why (pretraining, augmentation recipe,
 multi-scale assignment), which is the point of the chapter.
 
+**Generalization to real NBA broadcast** — the detector was fine-tuned on a
+small amateur dataset, so how does it fare on out-of-domain pro footage? Run on
+a continuous 20 s possession from an NBA broadcast (720p, different court /
+jerseys / camera / graphics — never seen in training):
+
+![Detection on an NBA broadcast frame](docs/nba_generalization.jpg)
+
+| signal | result |
+|---|---|
+| players on court per frame | median **10** (exactly a live possession) |
+| rim detected | **98%** of frames |
+| ball detected | 42% of frames (small/fast, as on our own clips) |
+| crowd false positives | **none** — spectators aren't boxed as players |
+
+It transfers well: 10 players, the rim, and no crowd false positives, with the
+referee correctly excluded. What does *not* transfer is everything downstream of
+a fixed camera — the broadcast pans and cuts (our camera-motion estimator finds
+the cut and measures the ~2 px/frame follow), so the minimap, court stats, and
+shot events don't apply. That moving-camera case is exactly what
+[ROADMAP.md](ROADMAP.md) v2 (dynamic homography) targets. Team colors are
+roughly split by k-means but not aligned to the true teams (a known limitation).
+Raw broadcast video is never committed — only this single annotated frame.
+
 ## Demo app
 
 **Live: [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)**
