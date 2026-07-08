@@ -89,12 +89,15 @@ at a time with before/after in the same table.
   unit-tested on synthetic sequences, self-eval verified on real MOT files.
   Reads MOTChallenge CSV from `data/labels/mot/gt/<clip>.txt`; predictions
   come from `track_diagnostics.py --dump-mot` (kept local — see `.gitignore`).
-- ☐ **Ground-truth labels (next, needs a human review pass)** — hand-label
-  player IDs on `pickup_seg3` (static 1080p) and `hudl_seg1` (panning 360p).
-  Bootstrap boxes from the detector, correct IDs by hand (CVAT local via
-  Docker is free, or a small OpenCV review tool). Commit under
-  `data/labels/mot/gt/`. Note: HOTA needs `trackeval`; `motmetrics` covers
-  IDF1/MOTA today — add HOTA when labels justify it.
+- ✅ **Labeling tool** — `scripts/label_tracks.py` (OpenCV): bootstraps from
+  the tracker's fragmented output, click a box + type a number to relabel a
+  whole track (collapses a fragment) or a single box (fixes a swap); undo,
+  resume, save to MOTChallenge. Pure edit logic unit-tested.
+- ☐ **Ground-truth labels (next, needs a human review pass)** — run
+  `label_tracks.py` on `pickup_seg3` (static 1080p) and `hudl_seg1` (panning
+  360p), correct IDs, commit under `data/labels/mot/gt/`. Then IDF1/MOTA in
+  README. Note: HOTA needs `trackeval`; `motmetrics` covers IDF1/MOTA today
+  — add HOTA when labels justify it.
 - **Accept:** baseline ByteTrack IDF1/MOTA for both clips in README once
   labels land (diagnostics baseline is already there).
 
