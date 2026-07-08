@@ -72,12 +72,21 @@ that need no labels.
 
 To make the `gt/` files, use `scripts/label_tracks.py` (OpenCV): it bootstraps
 from the tracker's predictions and lets you relabel a whole track with one
-keystroke (the fragmentation fix) or a single box (a swap fix), then saves
-MOTChallenge GT. Example:
+keystroke (the fragmentation fix), a single box (a swap fix), or remove a
+track entirely (a referee / bystander / spurious box, key `r`), then saves
+MOTChallenge GT.
+
+The recommended substrate is a short window of a **static, high-res** clip —
+crowded 360p footage (benches, refs misdetected as players) is painful to
+label and yields noisy GT. `pickup_label.mp4` is a 10 s / 300-frame window of
+`pickup_seg3` (static 1080p pickup game, ~6 players, no refs); the tracker
+fragments it into ~19 IDs, so it is ~13 track-merges of work:
 
 ```bash
-uv run python scripts/label_tracks.py data/clips/hudl_seg1.mp4 \
-    --boxes data/labels/mot/pred/hudl_seg1.txt
+uv run python scripts/label_tracks.py data/clips/pickup_label.mp4 \
+    --boxes data/labels/mot/pred/pickup_label.txt
+# regenerate that clip: ffmpeg -ss 5 -i data/clips/pickup_seg3.mp4 -t 10 \
+#   -c:v libx264 -crf 18 -an data/clips/pickup_label.mp4
 ```
 
 ## Ethics / legal
