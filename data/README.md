@@ -54,6 +54,22 @@ needs a higher-resolution source — documented limitation).
 Ground-truth shot labels are a simple CSV per clip: `time_s,outcome` with
 outcome ∈ {made, missed} — used by W4 precision/recall reporting.
 
+## Tracking (MOT) labels — `labels/mot/`
+
+For the v1.1 tracking work (see [../ROADMAP.md](../ROADMAP.md)):
+
+- `labels/mot/gt/<clip>.txt` — hand-labeled player-ID ground truth,
+  MOTChallenge CSV: `frame,id,bb_left,bb_top,bb_width,bb_height,conf,-1,-1,-1`,
+  `frame` = 1-based processed-frame ordinal. Committed (precious, hand-made).
+- `labels/mot/pred/<clip>.txt` — tracker predictions, same format, produced by
+  `scripts/track_diagnostics.py --dump-mot`. **Gitignored** (regenerable, tied
+  to the current weights).
+
+`scripts/eval_tracking.py` scores predictions against ground truth (IDF1,
+MOTA, ID switches). Ground-truth labeling is pending — until then,
+`scripts/track_diagnostics.py` reports unsupervised tracking-health proxies
+that need no labels.
+
 ## Ethics / legal
 
 - Clips are used for research/demo only.
