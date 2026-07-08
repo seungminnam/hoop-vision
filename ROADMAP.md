@@ -11,6 +11,11 @@
 > phase lists motivation, workstreams with acceptance criteria, deliverables,
 > and risks. Update the status checkboxes here as work merges, the same way
 > README's status section tracked W1–W6.
+>
+> **See also.** [docs/reference-analysis.md](docs/reference-analysis.md)
+> compares Hoop Vision to two reference basketball-CV projects and ranks what
+> to adopt (appearance tracking, speed/distance stats, camera-motion
+> compensation, jersey OCR) against this roadmap.
 
 ---
 
