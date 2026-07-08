@@ -126,6 +126,24 @@ whose arc stayed outside the horizontal attempt window; the false positive was
 a high pass crossing above rim level. Ball-track coverage on these clips:
 42–77% (vs 2% on 360p footage — resolution is the ball detector's bottleneck).
 
+**Tracking health (v1.1, in progress)** — the demo's most visible weakness is
+ID stability. Before hand-labeling MOT ground truth, `scripts/track_diagnostics.py`
+quantifies it without labels (measured 2026-07-08, `hoopvision_best.pt`, stride 1):
+
+| clip | frames | unique IDs | players on screen (median) | fragmentation ratio | median track life | ID switches (proxy) |
+|---|---|---|---|---|---|---|
+| pickup_seg3 (static 1080p) | 899 | 58 | 6 | 9.7× | 1.74 s | 0 |
+| hudl_seg1 (panning 360p) | 750 | 71 | 9 | 7.9× | 1.47 s | 5 |
+
+Honest reading: **ByteTrack fragments heavily on both clips** — the average
+on-screen player is split into ~8–10 IDs and a typical track survives only
+~1.5 s (motion-only association, no appearance model). The panning 360p clip
+adds more churn and the only detectable swap events. These are *unsupervised
+proxies*, not IDF1/HOTA; the supervised harness (`scripts/eval_tracking.py`,
+`motmetrics`) is built and unit-tested, waiting on hand-labeled IDs. Fixing this
+is [ROADMAP.md](ROADMAP.md) v1.1 (camera-motion compensation, appearance
+embedding, team-aware association).
+
 **Scratch detector vs YOLO** — measured 2026-07-08, same val split and clip,
 Apple M4 MPS (`scripts/benchmark.py`; details + training curves in
 [scratch_detector/README.md](scratch_detector/README.md)):

@@ -44,7 +44,7 @@ samples, especially `hudl_seg1`):
 
 | Phase | Theme | One-line goal | Status |
 |---|---|---|---|
-| v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ☐ not started |
+| v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ◐ measurement harness done; labels + fixes next |
 | v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ☐ not started |
 | v3 | Product: "Hudl-lite" | Auto game report for amateur teams (stats, shot charts, highlights) on the free stack | ☐ not started |
 
@@ -80,17 +80,23 @@ at a time with before/after in the same table.
 
 ### 3.1 MOT ground truth + metrics harness
 
-- Label player IDs on 2 held-out clips (~20–30 s each): one static 1080p
-  (`pickup_seg3`) and one panning 360p (`hudl_seg1`) — the easy and hard
-  regimes. Bootstrap boxes from the existing detector, correct IDs by hand
-  (CVAT local via Docker is free, or a small OpenCV review tool in
-  `scripts/`). Store as MOTChallenge-format text under `data/labels/mot/`
-  (gitignore exception already covers `data/labels/**`).
-- `scripts/eval_tracking.py`: IDF1 + HOTA + ID-switch count via the
-  `trackeval` or `motmetrics` package (pip, free). Mirror the style of
-  `scripts/eval_shots.py` (markdown table output, one row per clip).
-- **Accept:** baseline ByteTrack numbers for both clips printed by the script
-  and recorded in README.
+- ✅ **Unsupervised diagnostics** — `scripts/track_diagnostics.py` reports
+  fragmentation ratio, track life, churn, and an ID-switch proxy with no
+  labels. Baseline recorded in README (both clips fragment ~8–10×, median
+  track life ~1.5 s). This is the "before" the fixes must beat.
+- ✅ **Supervised harness** — `scripts/eval_tracking.py` computes IDF1/MOTA/
+  IDsw/MT/ML via `motmetrics` (dev dep; `np.asfarray` shim for NumPy 2),
+  unit-tested on synthetic sequences, self-eval verified on real MOT files.
+  Reads MOTChallenge CSV from `data/labels/mot/gt/<clip>.txt`; predictions
+  come from `track_diagnostics.py --dump-mot` (kept local — see `.gitignore`).
+- ☐ **Ground-truth labels (next, needs a human review pass)** — hand-label
+  player IDs on `pickup_seg3` (static 1080p) and `hudl_seg1` (panning 360p).
+  Bootstrap boxes from the detector, correct IDs by hand (CVAT local via
+  Docker is free, or a small OpenCV review tool). Commit under
+  `data/labels/mot/gt/`. Note: HOTA needs `trackeval`; `motmetrics` covers
+  IDF1/MOTA today — add HOTA when labels justify it.
+- **Accept:** baseline ByteTrack IDF1/MOTA for both clips in README once
+  labels land (diagnostics baseline is already there).
 
 ### 3.2 Association upgrades (one PR each, measured)
 

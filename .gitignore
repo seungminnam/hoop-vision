@@ -10,6 +10,9 @@ data/*
 !data/README.md
 !data/labels/
 !data/labels/**
+# MOT predictions are regenerable (track_diagnostics.py --dump-mot) and tied to
+# the current weights; keep them local. Hand-made ground truth under gt/ commits.
+data/labels/mot/pred/
 *.pt
 *.onnx
 runs/
