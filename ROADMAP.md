@@ -116,10 +116,15 @@ at a time with before/after in the same table.
   torso-color-histogram gates (union-find, disjoint frame ranges). On by
   default. Measured on `pickup_label`: IDF1 0.730 → **0.752**, switches 1 → 0,
   median track life 1.8 s → **4.4 s**, unique IDs 19 → 14, no regression.
-1. **Camera-motion compensation (GMC).** Estimate per-frame global motion
-   (e.g. `cv2.calcOpticalFlowPyrLK` on background corners or ECC on a
-   downscaled gray frame) and warp Kalman predictions before matching —
-   BoT-SORT's trick. Directly targets the panning clip. *(next)*
+1. ◐ **Camera-motion compensation (GMC)** — `src/hoopvision/motion.py` estimates
+   the global affine from background optical flow and can track in a stabilised
+   reference frame (`analyze(compensate_camera=True)`). The estimator works
+   (synthetic-verified; captures the 262 px pan on `hudl_seg1`), but **warping
+   boxes did not improve tracking** on the auto-tracking clip (track life
+   3.4→3.0 s) — pan correlated with play + cumulative drift; off by default.
+   Honest negative result. A stretch is BoT-SORT-style per-frame Kalman
+   compensation (needs a tracker that exposes its predict step). The estimator
+   is reused for v2 below.
 2. **Appearance embedding (in-tracker).** The stitching above is offline; a
    stretch is folding a ReID/OSNet-lite cost into association itself for the
    harder occlusion crossings.
@@ -177,7 +182,9 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   free tier or MPS.
 - Runtime: keypoints → RANSAC homography per frame → temporal smoothing
   (EMA on reprojected landmarks; fall back to last-good H when <4 confident
-  points, exactly like the ball-coverage gate philosophy).
+  points, exactly like the ball-coverage gate philosophy). Between confident
+  keypoint frames, the `motion.py` camera-motion estimator (built in C) can
+  carry the homography forward cheaply (pan/zoom form of dynamic registration).
 - **Accept (quantitative):** on held-out *static* clips with known
   calibrations (`calib_hudl_static2.json` + at least one new manual
   calibration), median landmark reprojection error and court-region IoU
