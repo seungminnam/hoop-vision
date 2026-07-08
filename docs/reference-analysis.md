@@ -103,11 +103,20 @@ motion before association and before homography). Lets tracking + minimap work
 on the Hudl-style panning clips that v1 excluded, and is a stepping stone to v2
 dynamic homography. *Effort: ~1 PR. Risk: medium (tuning).*
 
-### D. Jersey-number OCR — **per-player box scores** (v3 slice 3)
-R1's differentiator and the key to a real box score (points/rebounds per
-*named* player). Hard at our resolution (numbers are tiny at 360p, better at
-1080p) — scope to the 1080p pickup clips. *Effort: multi-PR. Risk: high
-(recall).* Depends on A/B.
+### D. Jersey-number OCR — **blocked by available data** (verdict 2026-07-08)
+R1's differentiator and the key to a per-*named*-player box score. Probed for
+feasibility by cropping jersey regions from both sources:
+- **Hudl (numbered HS jerseys) is 360p**: a near player's box is ~120 px tall,
+  so the digits are ~15–20 px and motion-blurred — barely human-legible, well
+  below reliable OCR. Expected recall would be very low.
+- **The 1080p pickup footage has no numbers at all** (plain athletic tanks /
+  t-shirts) — OCR is moot there.
+
+So per-player identity is **not achievable from the current clips**; it needs
+footage that is *both* numbered *and* ≥720p (a broadcast or a higher-res HS
+recording). Not worth adding a heavy OCR dependency to chase ~0% recall.
+Documented as a data constraint, not attempted. Revisit if such footage is
+sourced. Depends on A/B *and* better data.
 
 ### E. Not worth copying
 Ball interpolation (already have it) and basic KMeans teams (already have it).

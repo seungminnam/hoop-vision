@@ -232,10 +232,11 @@ prediction).
      report page + downloadable JSON.
 2. **Auto-highlights.** Cut ±N seconds around each shot event with ffmpeg,
    stitch a highlight reel; "made shots only" toggle. Cheap, high demo value.
-3. **Per-player identity.** Jersey-number OCR on track crops (small digit
-   classifier or free OCR lib) + track merging across broken IDs →
-   per-player box score (attempts, makes, distance). *Hardest; needs v1.1
-   track stability; keep optional.*
+3. ⊘ **Per-player identity (jersey OCR) — blocked by data.** Feasibility
+   probed 2026-07-08: the numbered footage (Hudl HS) is 360p with ~15–20 px
+   digits (below reliable OCR), and the 1080p pickup footage has no jersey
+   numbers. Needs footage that is both numbered and ≥720p; not attempted until
+   such data exists (see docs/reference-analysis.md §D).
 4. **Batch/local runner.** CLI to process a full game and emit the report;
    the hosted app stays precomputed-samples-only (free-tier limits — same
    split as v1).
