@@ -138,11 +138,25 @@ quantifies it without labels (measured 2026-07-08, `hoopvision_best.pt`, stride 
 Honest reading: **ByteTrack fragments heavily on both clips** — the average
 on-screen player is split into ~8–10 IDs and a typical track survives only
 ~1.5 s (motion-only association, no appearance model). The panning 360p clip
-adds more churn and the only detectable swap events. These are *unsupervised
-proxies*, not IDF1/HOTA; the supervised harness (`scripts/eval_tracking.py`,
-`motmetrics`) is built and unit-tested, waiting on hand-labeled IDs. Fixing this
-is [ROADMAP.md](ROADMAP.md) v1.1 (camera-motion compensation, appearance
-embedding, team-aware association).
+adds more churn and the only detectable swap events.
+
+Supervised baseline — measured on `pickup_label` (a hand-labeled 10 s / 300-frame
+window of `pickup_seg3`, 9 players; `scripts/eval_tracking.py` vs the tracker
+predictions, IoU 0.5):
+
+| metric | value | reading |
+|---|---|---|
+| IDF1 | **0.730** | identity consistency on matched players |
+| IDP / IDR | 0.585 / 0.970 | recall high, precision low → tracker *covers* players but over-produces IDs |
+| ID switches | 1 | on clean static footage, identity is actually stable; fragmentation, not swaps, is the problem |
+| MOTA | 0.341 | depressed by detection false positives — the detector fires on ~2 extra bench/partially-visible people per frame that the player-only GT excludes |
+
+So on clean footage the tracker keeps the real players fairly stable (1 switch,
+IDR 0.97) but splinters their identities across many short IDs (IDP 0.585) — the
+fragmentation the demo shows. That is the number the v1.1 fixes must beat.
+Improvements are tracked in [ROADMAP.md](ROADMAP.md) v1.1 (appearance embedding
+and track-management to raise IDP here; camera-motion compensation for the
+panning clip).
 
 **Scratch detector vs YOLO** — measured 2026-07-08, same val split and clip,
 Apple M4 MPS (`scripts/benchmark.py`; details + training curves in
