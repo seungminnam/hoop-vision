@@ -93,9 +93,11 @@ at a time with before/after in the same table.
   the tracker's fragmented output, click a box + type a number to relabel a
   whole track (collapses a fragment) or a single box (fixes a swap); undo,
   resume, save to MOTChallenge. Pure edit logic unit-tested.
-- ☐ **Ground-truth labels (next, needs a human review pass)** — run
-  `label_tracks.py` on `pickup_seg3` (static 1080p) and `hudl_seg1` (panning
-  360p), correct IDs, commit under `data/labels/mot/gt/`. Then IDF1/MOTA in
+- ☐ **Ground-truth labels (next, needs a human review pass)** — label a short
+  window of a **static, high-res** clip (crowded 360p footage with benches and
+  refs-as-players is not worth hand-labeling). `pickup_label.mp4` (10 s of
+  `pickup_seg3`, ~19 IDs) is the chosen substrate; correct IDs in
+  `label_tracks.py`, commit under `data/labels/mot/gt/`. Then IDF1/MOTA in
   README. Note: HOTA needs `trackeval`; `motmetrics` covers IDF1/MOTA today
   — add HOTA when labels justify it.
 - **Accept:** baseline ByteTrack IDF1/MOTA for both clips in README once

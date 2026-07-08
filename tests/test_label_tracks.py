@@ -60,6 +60,22 @@ def test_undo_restores_previous_ids():
     assert store.undo() is False  # nothing left to undo
 
 
+def test_remove_track_deletes_all_boxes_of_id():
+    store = _fragmented_store()
+    removed = store.remove_track(0, 1)  # the id-9 track (a "bystander"), 3 boxes
+    assert removed == 3
+    assert all(b.gid != 9 for frame in store.frames for b in frame)
+    assert [len(f) for f in store.frames] == [1, 1, 1]
+
+
+def test_undo_reverses_a_removal():
+    store = _fragmented_store()
+    store.remove_track(0, 1)
+    assert store.undo() is True
+    assert [len(f) for f in store.frames] == [2, 2, 2]
+    assert store.frames[0][1].gid == 9
+
+
 def test_next_free_id():
     store = _fragmented_store()
     assert store.next_free_id() == 10  # max id is 9

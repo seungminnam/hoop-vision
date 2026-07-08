@@ -17,6 +17,7 @@ Controls (shown on screen too):
   Enter            assign number to the whole track of the selected box
   x                assign number to only the selected box (fixes a swap)
   f                give the selected track the next unused number
+  r                remove the selected track (a referee / bystander / spurious box)
   u                undo last change              s  save        q  quit
 
 Saves to data/labels/mot/gt/<clip>.txt by default (1-based processed-frame
@@ -29,6 +30,7 @@ ordinals; see data/README.md). Re-open the same output to resume.
 from __future__ import annotations
 
 import argparse
+import copy
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -89,17 +91,15 @@ class LabelStore:
     # ---- editing ----------------------------------------------------------
 
     def _push_undo(self) -> None:
-        self._undo.append([[b.gid for b in frame] for frame in self.frames])
+        # Snapshot full boxes (not just ids) so undo also reverses removals.
+        self._undo.append([[copy.copy(b) for b in frame] for frame in self.frames])
         if len(self._undo) > 200:
             self._undo.pop(0)
 
     def undo(self) -> bool:
         if not self._undo:
             return False
-        snapshot = self._undo.pop()
-        for frame, gids in zip(self.frames, snapshot, strict=True):
-            for box, gid in zip(frame, gids, strict=True):
-                box.gid = gid
+        self.frames = self._undo.pop()
         return True
 
     def relabel_track(self, frame_i: int, det_i: int, new_id: int) -> int:
@@ -122,6 +122,18 @@ class LabelStore:
             return
         self._push_undo()
         self.frames[frame_i][det_i].gid = new_id
+
+    def remove_track(self, frame_i: int, det_i: int) -> int:
+        """Delete every box sharing the selected box's id — for a non-player
+        track (a referee, a bystander, or a spurious detection). Returns count."""
+        current = self.frames[frame_i][det_i].gid
+        self._push_undo()
+        removed = 0
+        for frame in self.frames:
+            keep = [b for b in frame if b.gid != current]
+            removed += len(frame) - len(keep)
+            frame[:] = keep
+        return removed
 
     def next_free_id(self) -> int:
         used = {box.gid for frame in self.frames for box in frame}
@@ -209,7 +221,7 @@ def run_ui(store: LabelStore, video: str, index_map: dict[int, int], out_path: P
 
     n = len(store.frames)
     state = {"i": 0, "sel": None, "buf": "", "dirty": False}
-    window = "label tracks — [s]ave [q]uit"
+    window = "label tracks - [s]ave [q]uit"
     cv2.namedWindow(window, cv2.WINDOW_NORMAL)
 
     def on_mouse(event, x, y, _flags, _param):
@@ -271,6 +283,10 @@ def run_ui(store: LabelStore, video: str, index_map: dict[int, int], out_path: P
         elif key == ord("f") and state["sel"] is not None:
             store.relabel_track(i, state["sel"], store.next_free_id())
             state["dirty"] = True
+        elif key == ord("r") and state["sel"] is not None:  # remove non-player track
+            store.remove_track(i, state["sel"])
+            state["sel"] = None
+            state["dirty"] = True
         elif key == ord("u"):
             state["dirty"] = store.undo() or state["dirty"]
 
@@ -292,10 +308,11 @@ def _apply(store: LabelStore, state: dict, whole_track: bool) -> None:
 
 def _hud(cv2, canvas, i, n, store, state, out_path) -> None:
     sel = state["sel"]
-    sel_txt = f"id={store.frames[i][sel].gid}" if sel is not None else "none"
+    valid = sel is not None and sel < len(store.frames[i])
+    sel_txt = f"id={store.frames[i][sel].gid}" if valid else "none"
     dirty = "*" if state["dirty"] else ""
     line1 = f"frame {i + 1}/{n}  selected: {sel_txt}  typing: [{state['buf']}]  {dirty}"
-    line2 = "click box; digits+Enter=relabel track; x=this box only; f=new id; u=undo; s=save"
+    line2 = "click; digits+Enter=relabel track; x=this box; f=new id; r=remove; u=undo; s=save"
     for k, text in enumerate((line1, line2)):
         y = 22 + k * 26
         cv2.putText(canvas, text, (10, y), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 0), 4)
