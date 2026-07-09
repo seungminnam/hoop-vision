@@ -120,3 +120,42 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   (later): reverse-engineer the 33-point real-world court template + a full-court
   model, then keypoints → RANSAC homography → per-frame NBA registration. The
   640×640 stretch must be undone (or folded into the homography) at inference.
+
+## ADR-005 — Anchor the 33-point template to NBA feet by seed-fit + independent validation
+
+- **Date:** 2026-07-10 · **Status:** accepted (Phase 2 template step)
+- **Context.** The 33-point detector (ADR-004, release v0.4.0) is trained, but
+  the dataset ships **no real-world coordinates**, so its keypoints can't yet
+  drive a homography to court feet. We need a metric template. We confirmed
+  `roboflow/sports` has only a *soccer* config (no basketball), so no published
+  template exists to reuse — it must be derived.
+- **Options.**
+  1. **Hand-guess** each point's court coordinate from broadcast frames.
+     Rejected: error-prone and unverifiable on a perspective view.
+  2. **Recover relative geometry, then seed-fit to feet, then validate against
+     all labels.** Chosen. `recover_court_template.py` already placed all 33
+     points in one reference frame (chained homographies, 0.73 px median). Fit a
+     homography from a confident 15-point seed (both baselines' corners / lane
+     edges / 3-ft corner-3 marks + the halfcourt line) to exact NBA feet, let it
+     **predict** the other 18, and check each prediction lands on a real court
+     feature.
+- **Decision.** Path 2. Every non-seed point landed on a real feature (FT
+  elbows at 19 ft, arc tops at rim+23.75 ft, corner-3 elbows at 14 ft, the 28-ft
+  coaching-box sideline hashes, baskets). The template is stored as **exact NBA
+  geometry** (not the noisy fitted values) in
+  `hoopvision.court_template.NBA_FULLCOURT_FT`, a new module — the 16-point
+  halfcourt schema in `court.py` is untouched (separate permanent contract).
+- **Rationale / validation (honesty rule).** The identity assignment is verified
+  *independently of how it was derived*: for all **1,220 labeled frames**, fit
+  image→feet from the visible points and measure reprojection error — **median
+  0.17 ft, p90 0.41 ft** over ~14k observations. Real labels agree with the
+  template to ~2 inches, so the coordinates are right, not just internally
+  consistent. Reproducible: `scripts/anchor_court_template.py --validate`.
+- **Consequences.** The two **basket points (idx 6, 26) are ~10 ft above the
+  court plane**, so they break the planar homography (parallax; they validate
+  ~1 ft worse). They are flagged `ELEVATED_KEYPOINTS` and excluded from fitting;
+  `PLANAR_KEYPOINTS` (31 points) is the homography set. Committed reference:
+  `docs/court_template_nba.png`. Remaining Phase-2 step: the per-frame runtime
+  (detector keypoints → RANSAC homography over planar points → smoothing), which
+  must feed the model 640×640-stretched frames to match training, then map to
+  feet (the homography absorbs the anisotropic stretch).
