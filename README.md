@@ -253,6 +253,31 @@ shot events don't apply. That moving-camera case is exactly what
 roughly split by k-means but not aligned to the true teams (a known limitation).
 Raw broadcast video is never committed — only this single annotated frame.
 
+**v2 — Court registration on NBA broadcast (in progress).** The moving-camera
+gap above is what v2 tackles: detect court landmarks per frame, then recover a
+per-frame homography. Phase 1 (the detector) is done — a YOLO11n-pose model
+fine-tuned on a public 33-point court-keypoint dataset of **18 NBA playoff
+games** (`roboflow-jvuqo/basketball-court-detection-2`, CC BY 4.0), the
+north-star domain. On the held-out **NBA test split**:
+
+| metric (test, 101 frames) | value |
+|---|---|
+| keypoint mAP50 | **0.985** |
+| keypoint mAP50-95 | 0.878 |
+| keypoint precision / recall | 0.98 / 0.98 |
+| court-box mAP50 | 0.995 |
+
+![Predicted court keypoints on a held-out NBA broadcast frame](docs/court_pose_nba_pred.jpg)
+
+Trained 100 epochs on Apple M4 MPS (`scripts/train_court_pose.py`); weights are
+[release v0.4.0](https://github.com/seungminnam/hoop-vision/releases/tag/v0.4.0).
+This adopts a real multi-venue NBA dataset instead of overfitting our single
+NCAA clip (rationale in [docs/decisions.md](docs/decisions.md) ADR-003/004).
+Phase 2 turns these keypoints into a homography: the 33-point court template has
+no published real-world coordinates, but it is recoverable from the labels
+themselves (`scripts/recover_court_template.py` places all 33 points into one
+frame at 0.73 px median consistency), then anchored to NBA court dimensions.
+
 ## Demo app
 
 **Live: [hoop-vision.streamlit.app](https://hoop-vision.streamlit.app/)**
