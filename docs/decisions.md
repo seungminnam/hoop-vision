@@ -159,3 +159,37 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   (detector keypoints → RANSAC homography over planar points → smoothing), which
   must feed the model 640×640-stretched frames to match training, then map to
   feet (the homography absorbs the anisotropic stretch).
+
+## ADR-006 — Per-frame registration runtime: smooth in image space, gate on confidence
+
+- **Date:** 2026-07-10 · **Status:** accepted (Phase 2 runtime)
+- **Context.** With the metric template (ADR-005), each frame's detected
+  keypoints can be turned into an image→feet homography. Naively re-fitting every
+  frame independently makes the minimap jitter, and frames with few visible
+  points produce wild homographies. We need temporal stability and a failure mode.
+- **Options for smoothing.**
+  1. **EMA the 3×3 homography matrix elements.** Rejected: the matrix entries are
+     not commensurate (scale/translation/perspective mix), so element-wise
+     averaging warps unpredictably.
+  2. **EMA in image space via a canonical court basis.** Chosen. Each frame,
+     project a fixed, well-spread set of court points (corners, center, arc tops)
+     to image through the new homography, EMA those pixel positions against the
+     running estimate, then refit feet↔image from the smoothed positions. Smooths
+     a geometrically meaningful quantity (where the court lands on screen).
+- **Decision.** `CourtRegistrar`: fit RANSAC over the 31 `PLANAR_KEYPOINTS`
+  (baskets excluded — ADR-005), image-space EMA (α=0.35), a **≥4-point gate**,
+  and a **last-good fallback** that coasts on the previous homography for up to
+  `max_misses` frames before declaring registration "unavailable" — the same
+  honesty pattern as v1's ball-coverage gate. Pure geometry, unit-tested;
+  detection I/O lives in `scripts/register_court.py`.
+- **Rationale / validation.** End-to-end on the held-out NBA test split
+  (detector → homography, scored on independent GT pixels): **99% registered,
+  median 0.57 ft / p90 1.61 ft** court-position error (`eval_registration.py`).
+  The detector adds ~0.4 ft over the template's own 0.17 ft — an honest picture
+  of the full pipeline. Inference resizes frames to 640×640 (matching the
+  stretched training data); the homography absorbs the anisotropic scale, so no
+  separate un-stretch step is needed.
+- **Consequences.** Registration is accurate on the camera-facing half and drifts
+  where few keypoints are visible (extrapolation) — stated plainly in the README
+  and shown in `docs/court_registration_nba.gif`. Next (§4.3): feed these court
+  coordinates into the existing shot-chart / stats pipeline (`court.to_court`).
