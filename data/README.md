@@ -49,8 +49,10 @@ The Hudl auto-tracking camera holds still in two ≥20 s windows (found by
 1 fps ceiling-strip phase correlation over the full game, verified by frame
 blending). Calibration was recovered from the paint region's segmented
 corners, then refined against the visible 3-pt arc / center circle / halfcourt
-line; at 360p the paint-corner reprojection error is 1.7 ft (target <1 ft
-needs a higher-resolution source — documented limitation).
+line; with the correct NCAA court profile the paint-corner reprojection error
+is **0.87 ft** (under the 1 ft target). v1 assumed NBA dimensions and got
+1.7 ft — the gap was wrong court geometry, not resolution (see the court-profile
+section below).
 
 Ground-truth shot labels are a simple CSV per clip: `time_s,outcome` with
 outcome ∈ {made, missed} — used by W4 precision/recall reporting.
@@ -114,16 +116,18 @@ corner-three segment on a pure-arc court) is dropped. `auto_calibrate.py
 --profile` uses the same models. Empirically this also identifies a clip's
 court type: re-fitting `hudl_static2` (same frame/curves) gives NBA 2.14 ft /
 **NCAA 0.87 ft** / HS 1.03 ft refined reprojection — it is an NCAA-dimension
-court, so v1's NBA-assumed 1.7 ft was the wrong geometry. Regenerating
-`calib_hudl_static2.json` (and its samples) with `--profile ncaa` is a pending
-accuracy win.
+court, so v1's NBA-assumed 1.7 ft was the wrong geometry. `calib_hudl_static2.json`
+and its `app/samples` stats/heatmap have been regenerated with `--profile ncaa`
+(the player-stat distances dropped ~10–30 % as the over-scaled homography was
+corrected).
 
 `court_kpts/` (images + `annotations.json`) is **gitignored** — regenerable,
 tied to the calibrations, and we never commit raw broadcast frames. The only
 committed artifact is `docs/court_keypoints_sample.jpg` (one annotated
 excerpt, spot-check). Pseudo-labels are only as accurate as the seed
-calibration (1.7 ft @ 360p on `hudl_static2`); add higher-res correctly-lined
-sources before trusting the trained model off this court.
+calibration (0.87 ft with the NCAA profile on `hudl_static2`); add more
+correctly-lined sources of other levels before trusting the trained model off
+this court.
 
 ## Ethics / legal
 

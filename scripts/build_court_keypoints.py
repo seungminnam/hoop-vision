@@ -12,7 +12,7 @@ the printed summary numbers.
 
 Usage:
     uv run python scripts/build_court_keypoints.py \
-        --source data/clips/hudl_static2.mp4 calib_hudl_static2.json nba \
+        --source data/clips/hudl_static2.mp4 calib_hudl_static2.json ncaa \
         --output data/court_kpts --stride 15 --augment 4 \
         --overlay docs/court_keypoints_sample.jpg
 
