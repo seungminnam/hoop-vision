@@ -253,9 +253,10 @@ shot events don't apply. That moving-camera case is exactly what
 roughly split by k-means but not aligned to the true teams (a known limitation).
 Raw broadcast video is never committed — only this single annotated frame.
 
-**v2 — Court registration on NBA broadcast (in progress).** The moving-camera
-gap above is what v2 tackles: detect court landmarks per frame, then recover a
-per-frame homography. Phase 1 (the detector) is done — a YOLO11n-pose model
+**v2 — Court registration on NBA broadcast (§4.2 done, §4.3 integration next).**
+The moving-camera gap above is what v2 tackles: detect court landmarks per
+frame, then recover a per-frame homography. Phase 1 (the detector) — a
+YOLO11n-pose model
 fine-tuned on a public 33-point court-keypoint dataset of **18 NBA playoff
 games** (`roboflow-jvuqo/basketball-court-detection-2`, CC BY 4.0), the
 north-star domain. On the held-out **NBA test split**:
@@ -273,10 +274,35 @@ Trained 100 epochs on Apple M4 MPS (`scripts/train_court_pose.py`); weights are
 [release v0.4.0](https://github.com/seungminnam/hoop-vision/releases/tag/v0.4.0).
 This adopts a real multi-venue NBA dataset instead of overfitting our single
 NCAA clip (rationale in [docs/decisions.md](docs/decisions.md) ADR-003/004).
-Phase 2 turns these keypoints into a homography: the 33-point court template has
-no published real-world coordinates, but it is recoverable from the labels
-themselves (`scripts/recover_court_template.py` places all 33 points into one
-frame at 0.73 px median consistency), then anchored to NBA court dimensions.
+
+**Phase 2 — registration (done).** The 33-point schema ships no real-world
+coordinates, so we derived them: `recover_court_template.py` places all 33
+points into one frame from the labels (0.73 px median), then a 15-point seed-fit
+anchors that layout to **exact NBA feet** (`hoopvision.court_template`). The
+template validates on all 1,220 labeled frames at **median 0.17 ft** image→feet
+reprojection ([ADR-005](docs/decisions.md); diagram
+[docs/court_template_nba.png](docs/court_template_nba.png)). The runtime
+(`hoopvision.registration.CourtRegistrar`) fits a RANSAC homography per frame
+over the planar points, smooths it (EMA + last-good fallback), and gates on ≥4
+confident points. End-to-end on the held-out NBA test split:
+
+| registration (test, 101 frames) | value |
+|---|---|
+| frames registered | **100 / 101 (99%)** |
+| court-position error, median | **0.57 ft** |
+| court-position error, p90 | 1.61 ft |
+
+`scripts/eval_registration.py` reproduces this; the two elevated basket points
+are excluded from the planar fit (they sit ~10 ft above the floor). On a
+**moving-camera** Grizzlies–Magic broadcast the court model reprojects onto the
+floor as it pans, and detected players map to a top-down minimap
+(`scripts/register_court.py`):
+
+![NBA broadcast court registration + player minimap](docs/court_registration_nba.gif)
+
+The far half drifts where few keypoints are visible (honest extrapolation
+limit); the observed half tracks tightly. Next (§4.3): feed these court
+coordinates into the existing shot-chart / stats pipeline.
 
 ## Demo app
 

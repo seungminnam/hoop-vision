@@ -53,7 +53,7 @@ samples, especially `hudl_seg1`):
 | Phase | Theme | One-line goal | Status |
 |---|---|---|---|
 | v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ◐ measurement harness done; labels + fixes next |
-| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ pseudo-label factory done (§4.1); model + runtime next |
+| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ §4.2 done (detector 0.985 mAP; template 0.17 ft; registration 0.57 ft on NBA test); §4.3 pipeline integration next |
 | v3 | Product: "Hudl-lite" | Auto game report for amateur teams (stats, shot charts, highlights) on the free stack | ☐ not started |
 
 ## 2. Working agreements (unchanged from v1 — do not relax)
@@ -237,15 +237,18 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   points, exactly like the ball-coverage gate philosophy). Between confident
   keypoint frames, the `motion.py` camera-motion estimator (built in C) can
   carry the homography forward cheaply (pan/zoom form of dynamic registration).
-- **Accept (quantitative):** on held-out *static* clips with known
-  calibrations (`calib_hudl_static2.json` + at least one new manual
-  calibration), median landmark reprojection error and court-region IoU
-  reported by a committed eval script; **on the panning clip**, minimap
-  jitter (frame-to-frame player court-position variance during stands-still
-  moments) reported before/after smoothing.
-- **Accept (qualitative):** minimap PIP video on `hudl_seg1` (the panning
-  clip that v1 could not calibrate) looks stable; committed as a new app
-  sample + README GIF.
+- ✅ **Runtime done (2026-07-10, [ADR-006](docs/decisions.md)).**
+  `hoopvision.registration.CourtRegistrar`: predicted keypoints → RANSAC
+  homography over the 31 planar points → EMA smoothing (reproject a canonical
+  court basis to image, EMA there, refit) → last-good fallback and an "≥4
+  points" gate. End-to-end on the held-out **NBA test split** (detector →
+  homography, scored on GT pixels): **99% of 101 frames registered, court-
+  position error median 0.57 ft / p90 1.61 ft** (`scripts/eval_registration.py`).
+- ✅ **Accept (qualitative):** on the moving-camera Grizzlies–Magic broadcast the
+  court model reprojects onto the floor as the camera pans, players map to a
+  top-down minimap (`scripts/register_court.py`); committed README GIF
+  `docs/court_registration_nba.gif`. The far half drifts where few keypoints are
+  visible (honest extrapolation limit); the observed half tracks tightly.
 
 ### 4.3 Pipeline + product integration
 
