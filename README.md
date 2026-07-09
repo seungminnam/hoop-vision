@@ -198,13 +198,17 @@ reliable per-player rows) over a 21 s possession:
 
 | track | team | seconds | distance (ft) | avg (mph) | top (mph) |
 |---|---|---|---|---|---|
-| 3 | 1 | 21.0 | 105.3 | 3.4 | 10.4 |
-| 8 | 0 | 20.8 | 96.2 | 3.2 | 12.3 |
-| 9 | 1 | 20.9 | 81.7 | 2.7 | 9.0 |
+| 8 | 0 | 20.8 | 85.8 | 2.8 | 10.9 |
+| 3 | 1 | 21.0 | 73.8 | 2.4 | 7.4 |
+| 9 | 1 | 20.9 | 72.3 | 2.4 | 7.5 |
+
+(Calibrated with the NCAA court profile — `hudl_static2`'s true geometry, 0.87 ft
+paint-corner reprojection; the earlier NBA-assumed homography over-scaled these
+distances. See [ROADMAP.md](ROADMAP.md) §4.1.)
 
 ![Court occupancy heatmap](docs/occupancy_hudl_static2.png)
 
-Distances and walking-to-jogging average speeds (2–3 mph, top bursts ~10–12 mph)
+Distances and walking-to-jogging average speeds (2–3 mph, top bursts ~7–11 mph)
 are physically sensible for a half-court set, and the heatmap concentrates in
 the paint and along the arc as expected. Honest caveats: numbers are per
 *track* not per named player (jersey OCR is future work), so short tracks are
@@ -306,8 +310,10 @@ Building in public, Jul–Aug 2026 ([SPEC.md](SPEC.md) has the weekly milestones
   mostly separated at 360p; occasional flips on small crops — noted limitation)
 - [x] W3 — homography + minimap, verified on a static lined-court clip
   (`docs/sample_minimap.jpg`; calibration = paint-region corners + curve
-  refinement, paint-corner reprojection 1.7 ft — above the 1 ft target because
-  the source is 360p; see `calib_hudl_static2.json`)
+  refinement). Paint-corner reprojection is **0.87 ft** — under the 1 ft target
+  once the correct NCAA court geometry is used (v1 assumed NBA dimensions and
+  got 1.7 ft; see the v2 court-profile note in ROADMAP §4.1). See
+  `calib_hudl_static2.json`.
 - [x] W4 — shot events vs hand-labeled ground truth (80%/80% on 3 clips, n=5;
   shot-chart court coordinates pending W3 calibration)
 - [x] W5 — from-scratch detector benchmark (player AP50 0.578 vs YOLO 0.965;
