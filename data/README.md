@@ -90,6 +90,29 @@ uv run python scripts/label_tracks.py data/clips/pickup_label.mp4 \
 #   -c:v libx264 -crf 18 -an data/clips/pickup_label.mp4
 ```
 
+## Court keypoints (v2) — `court_kpts/`
+
+For v2 dynamic homography (see [../ROADMAP.md](../ROADMAP.md) §4.1). A
+calibrated static clip is a free keypoint annotator: `scripts/build_court_keypoints.py`
+projects the fixed `court.COURT_KEYPOINTS` schema (16 landmarks) into each
+frame via the homography and augments with random warps + flips + color jitter,
+producing a COCO-keypoints dataset for training a per-frame registration model.
+
+```bash
+uv run python scripts/build_court_keypoints.py \
+    --source data/clips/hudl_static2.mp4 calib_hudl_static2.json \
+    --output data/court_kpts --stride 15 --augment 4 \
+    --overlay docs/court_keypoints_sample.jpg
+# pool more clips by repeating --source CLIP CALIB
+```
+
+`court_kpts/` (images + `annotations.json`) is **gitignored** — regenerable,
+tied to the calibrations, and we never commit raw broadcast frames. The only
+committed artifact is `docs/court_keypoints_sample.jpg` (one annotated
+excerpt, spot-check). Pseudo-labels are only as accurate as the seed
+calibration (1.7 ft @ 360p on `hudl_static2`); add higher-res correctly-lined
+sources before trusting the trained model off this court.
+
 ## Ethics / legal
 
 - Clips are used for research/demo only.
