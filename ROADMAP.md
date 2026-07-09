@@ -200,6 +200,17 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
 
 ### 4.2 Keypoint model + per-frame registration
 
+> **Phase 1 done (2026-07-10) — NBA court keypoint detector.** ✅ YOLO11n-pose
+> fine-tuned on the 33-point dataset (see below); held-out **NBA test**: keypoint
+> mAP50 **0.985** / mAP50-95 0.878 / P·R 0.98·0.98, court-box mAP50 0.995.
+> Scripts: `convert_court_coco_to_yolo_pose.py`, `train_court_pose.py`,
+> `predict_court_pose.py`; weights [release v0.4.0](https://github.com/seungminnam/hoop-vision/releases/tag/v0.4.0).
+> **Phase 2 groundwork (◐):** the 33-point schema has no published real-world
+> template, but `recover_court_template.py` recovers all 33 into one frame from
+> the labels alone (0.73 px median consistency). Remaining: anchor the recovered
+> template to NBA feet, then keypoints → RANSAC homography → per-frame
+> registration + minimap/stats (and undo the dataset's 640×640 stretch).
+
 > **Data strategy update (2026-07-09, [ADR-003](docs/decisions.md)).** Rather
 > than train only on our single-court (NCAA) pseudo-labels — which overfit one
 > gym — adopt a public **multi-venue court-keypoint dataset** as the training

@@ -129,6 +129,39 @@ calibration (0.87 ft with the NCAA profile on `hudl_static2`); add more
 correctly-lined sources of other levels before trusting the trained model off
 this court.
 
+## NBA court keypoints (v2 §4.2) — external dataset
+
+The v2 registration model trains on a public, pre-labeled dataset instead of
+only our single-court pseudo-labels (see [../docs/decisions.md](../docs/decisions.md)
+ADR-003/004). This is real multi-venue NBA data — the north-star domain.
+
+| Field | Value |
+|---|---|
+| Name | basketball-court-detection-2 (v13) |
+| URL | https://universe.roboflow.com/roboflow-jvuqo/basketball-court-detection-2 |
+| License | CC BY 4.0 |
+| Images | 1,220 (train 1006 / val 113 / test 101; ~610 source frames ×2 brightness aug) |
+| Content | real NBA playoff broadcast, 18 games; 33 court keypoints per image |
+| Format | COCO keypoints, resized 640×640 (stretch) |
+
+Download (needs a free `ROBOFLOW_API_KEY`, per-command export, never committed):
+
+```bash
+export ROBOFLOW_API_KEY=...
+uv run --with roboflow python scripts/download_data.py \
+    --workspace roboflow-jvuqo --project basketball-court-detection-2 \
+    --version 13 --format coco
+uv run python scripts/convert_court_coco_to_yolo_pose.py   # → data/court_pose/
+uv run python scripts/train_court_pose.py --epochs 100 --device mps
+```
+
+The raw dataset (`data/basketball-court-detection-2-13/`) and the YOLO-pose
+conversion (`data/court_pose/`) are **gitignored** — regenerable from the
+commands above; we never commit the frames. Trained weights ship as a GitHub
+release, not in git. Known caveats: images are stretched to 640×640 (aspect
+distorted — matters for the Phase 2 homography, not detection); the 33-point
+schema has no published real-world template (Phase 2 reverse-engineers it).
+
 ## Ethics / legal
 
 - Clips are used for research/demo only.

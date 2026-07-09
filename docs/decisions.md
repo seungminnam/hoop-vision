@@ -61,7 +61,7 @@ Newest last. Status ∈ {accepted, superseded, pending}.
 
 ## ADR-003 — Adopt an external multi-venue court-keypoint dataset for v2 §4.2
 
-- **Date:** 2026-07-09 · **Status:** pending (download + inspection)
+- **Date:** 2026-07-09 · **Status:** accepted (dataset inspected; see ADR-004)
 - **Context.** Broadening the dataset by sourcing our own fixed-camera clips hit
   a discovery bottleneck: headless tools can't watch video to confirm a clip is
   static with visible court lines, and our only calibrated court is one NCAA
@@ -86,5 +86,37 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   schemas (the keypoint index is a permanent contract, so this is a deliberate
   fork). Download needs `ROBOFLOW_API_KEY` (user's free key, per-command export;
   never committed). Roboflow Universe pages 403 to automated fetch — inspect via
-  the API after download. Finalize this ADR (accepted/superseded) once the
-  dataset is inspected.
+  the API after download.
+- **Inspection result (accepted).** `basketball-court-detection-2` v13: **1,220
+  images** (train 1006 / val 113 / test 101; ~610 source frames × brightness
+  aug), **33 court keypoints** per image, single `court` class, CC BY 4.0. The
+  frames are **real NBA playoff broadcast** across **18 games** (Nuggets–Clippers,
+  Knicks–Pistons, Timberwolves–Thunder, …), mean 12.5/33 landmarks visible,
+  every image usable (≥4). Labels are high quality (points sit on line
+  intersections / arc / corners). Caveats: images are **stretched to 640×640**
+  (aspect distorted — matters for homography, not detection), it is a
+  **full-court** schema (our model was halfcourt), and **no real-world coordinate
+  template is published** for the 33 points. This confirms Path A and drives
+  ADR-004.
+
+## ADR-004 — Pivot v2 to the 33-point full-court NBA keypoint schema
+
+- **Date:** 2026-07-09 · **Status:** accepted (Phase 1 in progress)
+- **Context.** Following ADR-003, the adopted dataset uses a 33-point full-court
+  NBA schema that does not match our 16-point halfcourt `court.COURT_KEYPOINTS`.
+  We must choose which schema the v2 registration model targets.
+- **Options.** (1) Adopt the dataset's 33-point schema. (2) Keep our 16-point
+  schema and map the dataset's 33 points onto it. Chosen (1).
+- **Decision.** Adopt the 33-point full-court schema for the v2 (NBA) path. Our
+  16-point halfcourt schema + §4.1 pseudo-label factory stay as a complement for
+  our own amateur/NCAA clips and as the "from-scratch" story; the profile system
+  and projection/augmentation utilities are reused, not discarded.
+- **Rationale.** Mapping 33→16 would need the very real-world template we don't
+  have and would throw away information; training directly on 1,220 labeled NBA
+  frames is the shortest path to a detector that works on the north-star domain.
+- **Consequences.** **Phase 1** (this PR): train YOLO11-pose on the 33-point
+  data (MPS, `fliplr=0` because the 33-point left/right mirror map is unknown —
+  a flip would scramble identities); report val/test keypoint metrics. **Phase 2**
+  (later): reverse-engineer the 33-point real-world court template + a full-court
+  model, then keypoints → RANSAC homography → per-frame NBA registration. The
+  640×640 stretch must be undone (or folded into the homography) at inference.
