@@ -179,9 +179,16 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   pans/zooms/tilts), 50% horizontal flips with correct landmark relabeling,
   and brightness/contrast/hue jitter. Off-frame landmarks are dropped
   (visibility flag), matching the ≥4-point homography gate.
+- ✅ **Court geometry profiles** — `court.PROFILES` (NBA/NCAA/HS): lane width,
+  3-pt radius and corner-three geometry vary by level, so each clip declares
+  its profile and the projected landmarks stay metrically correct across court
+  types (undefined landmarks, e.g. the straight corner-three on a pure-arc
+  court, are dropped). `auto_calibrate.py --profile` uses the same models.
+  Bonus: re-fitting `hudl_static2` per profile identifies its court type —
+  NBA 2.14 ft / **NCAA 0.87 ft** / HS 1.03 ft refined reprojection, so it is an
+  NCAA court and v1's NBA-assumed 1.7 ft used the wrong geometry.
 - ✅ **Spot-check** — `docs/court_keypoints_sample.jpg`: projected keypoints on
-  a `hudl_static2` frame form a coherent court constellation, consistent with
-  the v1-validated homography (1.7 ft reprojection @ 360p). First run: 80
+  a `hudl_static2` frame form a coherent court constellation. First run: 80
   samples from 20 frames (×3 aug), mean 15/16 landmarks visible.
 - Dataset image bytes land under gitignored `data/court_kpts/` (regenerable;
   we never commit raw broadcast frames).

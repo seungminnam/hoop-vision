@@ -44,6 +44,30 @@ LANDMARKS: dict[str, tuple[float, float]] = {
     "ft-line-right": (25.0 + PAINT_HALF_WIDTH, FT_LINE_Y),
 }
 
+
+# Court dimensions that vary by level. The universal ones (court 50x47 ft, FT
+# line 19 ft from baseline, FT circle 6 ft, rim center 5.25 ft) are the module
+# constants above and hold for NBA/NCAA/HS/FIBA; only the lane width, 3-pt
+# radius, and corner-three geometry change. This lets the same keypoint schema
+# produce metrically correct pseudo-labels on any level's court (see v2 §4.1).
+@dataclass(frozen=True)
+class CourtProfile:
+    name: str
+    lane_half_width_ft: float  # half the painted lane (NBA 8, NCAA/HS 6)
+    three_pt_radius_ft: float  # arc radius from rim center
+    # The straight corner-3 segment (parallel to the sideline) only exists on
+    # courts whose corner distance is shorter than the arc radius — NBA. On a
+    # pure-arc court (HS, and treated so for NCAA here) there is no such point,
+    # so the corner-three landmarks are undefined (None → absent in labels).
+    corner_three_x_ft: float | None
+    corner_three_y_ft: float | None
+
+
+NBA = CourtProfile("nba", PAINT_HALF_WIDTH, THREE_PT_RADIUS, CORNER_THREE_X, CORNER_THREE_Y)
+NCAA = CourtProfile("ncaa", 6.0, 22.146, None, None)  # men's; women's/HS use 19.75
+HIGH_SCHOOL = CourtProfile("hs", 6.0, 19.75, None, None)
+PROFILES: dict[str, CourtProfile] = {p.name: p for p in (NBA, NCAA, HIGH_SCHOOL)}
+
 # Ordered keypoint schema for the v2 court-registration model. The index is a
 # permanent contract: it is the heatmap channel a keypoint model predicts and
 # the column order in every pseudo-labeled annotation, so APPEND ONLY — never
@@ -51,29 +75,68 @@ LANDMARKS: dict[str, tuple[float, float]] = {
 #
 # Points are geometrically unambiguous court features a human (or ICP-refined
 # homography) can locate: line intersections, arc/circle extrema, corners.
-COURT_KEYPOINTS: list[tuple[str, float, float]] = [
-    ("baseline-left-corner", 0.0, 0.0),
-    ("baseline-right-corner", COURT_WIDTH_FT, 0.0),
-    ("paint-left-baseline", 25.0 - PAINT_HALF_WIDTH, 0.0),
-    ("paint-right-baseline", 25.0 + PAINT_HALF_WIDTH, 0.0),
-    ("ft-line-left", 25.0 - PAINT_HALF_WIDTH, FT_LINE_Y),
-    ("ft-line-right", 25.0 + PAINT_HALF_WIDTH, FT_LINE_Y),
-    ("ft-line-center", 25.0, FT_LINE_Y),
-    ("ft-circle-top", 25.0, FT_LINE_Y + FT_CIRCLE_RADIUS),
-    ("three-pt-arc-top", 25.0, RIM_CENTER[1] + THREE_PT_RADIUS),
-    ("corner-three-left", CORNER_THREE_X, CORNER_THREE_Y),
-    ("corner-three-right", COURT_WIDTH_FT - CORNER_THREE_X, CORNER_THREE_Y),
-    ("rim-center", RIM_CENTER[0], RIM_CENTER[1]),
-    ("halfcourt-left-corner", 0.0, COURT_LENGTH_FT),
-    ("halfcourt-right-corner", COURT_WIDTH_FT, COURT_LENGTH_FT),
-    ("halfcourt-center", 25.0, COURT_LENGTH_FT),
-    ("center-circle-near", 25.0, COURT_LENGTH_FT - FT_CIRCLE_RADIUS),
+KEYPOINT_NAMES: list[str] = [
+    "baseline-left-corner",
+    "baseline-right-corner",
+    "paint-left-baseline",
+    "paint-right-baseline",
+    "ft-line-left",
+    "ft-line-right",
+    "ft-line-center",
+    "ft-circle-top",
+    "three-pt-arc-top",
+    "corner-three-left",
+    "corner-three-right",
+    "rim-center",
+    "halfcourt-left-corner",
+    "halfcourt-right-corner",
+    "halfcourt-center",
+    "center-circle-near",
 ]
 
-KEYPOINT_NAMES: list[str] = [name for name, _x, _y in COURT_KEYPOINTS]
-KEYPOINT_COURT_FT: np.ndarray = np.array(
-    [(x, y) for _name, x, y in COURT_KEYPOINTS], dtype=np.float64
-)
+
+def keypoints_ft(profile: CourtProfile = NBA) -> np.ndarray:
+    """Court-feet coordinates of the keypoint schema for a court level.
+
+    Returns an (K, 2) array in `KEYPOINT_NAMES` order. Landmarks a profile does
+    not define (e.g. corner threes on a pure-arc court) are `np.nan` so callers
+    can drop them (no valid homography target).
+    """
+    lh = profile.lane_half_width_ft
+    r = profile.three_pt_radius_ft
+    if profile.corner_three_x_ft is None or profile.corner_three_y_ft is None:
+        cl = (np.nan, np.nan)
+        cr = (np.nan, np.nan)
+    else:
+        cl = (profile.corner_three_x_ft, profile.corner_three_y_ft)
+        cr = (COURT_WIDTH_FT - profile.corner_three_x_ft, profile.corner_three_y_ft)
+    coords: dict[str, tuple[float, float]] = {
+        "baseline-left-corner": (0.0, 0.0),
+        "baseline-right-corner": (COURT_WIDTH_FT, 0.0),
+        "paint-left-baseline": (25.0 - lh, 0.0),
+        "paint-right-baseline": (25.0 + lh, 0.0),
+        "ft-line-left": (25.0 - lh, FT_LINE_Y),
+        "ft-line-right": (25.0 + lh, FT_LINE_Y),
+        "ft-line-center": (25.0, FT_LINE_Y),
+        "ft-circle-top": (25.0, FT_LINE_Y + FT_CIRCLE_RADIUS),
+        "three-pt-arc-top": (25.0, RIM_CENTER[1] + r),
+        "corner-three-left": cl,
+        "corner-three-right": cr,
+        "rim-center": (RIM_CENTER[0], RIM_CENTER[1]),
+        "halfcourt-left-corner": (0.0, COURT_LENGTH_FT),
+        "halfcourt-right-corner": (COURT_WIDTH_FT, COURT_LENGTH_FT),
+        "halfcourt-center": (25.0, COURT_LENGTH_FT),
+        "center-circle-near": (25.0, COURT_LENGTH_FT - FT_CIRCLE_RADIUS),
+    }
+    return np.array([coords[name] for name in KEYPOINT_NAMES], dtype=np.float64)
+
+
+# Default (NBA) schema — kept as module constants for backward compatibility.
+KEYPOINT_COURT_FT: np.ndarray = keypoints_ft(NBA)
+COURT_KEYPOINTS: list[tuple[str, float, float]] = [
+    (name, float(x), float(y))
+    for name, (x, y) in zip(KEYPOINT_NAMES, KEYPOINT_COURT_FT, strict=True)
+]
 
 
 @dataclass

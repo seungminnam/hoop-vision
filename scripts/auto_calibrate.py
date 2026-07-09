@@ -43,23 +43,32 @@ from hoopvision.court import (  # noqa: E402
     COURT_LENGTH_FT,
     FT_CIRCLE_RADIUS,
     FT_LINE_Y,
-    PAINT_HALF_WIDTH,
+    NBA,
+    PROFILES,
     RIM_CENTER,
-    THREE_PT_RADIUS,
     CourtCalibration,
+    CourtProfile,
 )
 from hoopvision.ingest import frames  # noqa: E402
 
-# Court-model corners of the paint, in the order this script produces image
-# corners: baseline-left, baseline-right, ft-left, ft-right.
-PAINT_CORNERS_FT = np.array(
-    [
-        [25.0 - PAINT_HALF_WIDTH, 0.0],
-        [25.0 + PAINT_HALF_WIDTH, 0.0],
-        [25.0 - PAINT_HALF_WIDTH, FT_LINE_Y],
-        [25.0 + PAINT_HALF_WIDTH, FT_LINE_Y],
-    ]
-)
+
+def paint_corners_ft(profile: CourtProfile = NBA) -> np.ndarray:
+    """Court-model paint corners for a court level, in the order this script
+    produces image corners: baseline-left, baseline-right, ft-left, ft-right.
+    Only the lane width varies by level; the paint is 19 ft deep everywhere."""
+    lh = profile.lane_half_width_ft
+    return np.array(
+        [
+            [25.0 - lh, 0.0],
+            [25.0 + lh, 0.0],
+            [25.0 - lh, FT_LINE_Y],
+            [25.0 + lh, FT_LINE_Y],
+        ]
+    )
+
+
+# NBA-default paint corners, kept for backward compatibility.
+PAINT_CORNERS_FT = paint_corners_ft(NBA)
 
 CURVE_CHOICES = ("three", "center", "halfcourt", "ft-circle")
 
@@ -242,14 +251,15 @@ def order_paint_corners(
 # ---------------------------------------------------------------------------
 
 
-def court_curves(names: list[str]) -> list[np.ndarray]:
+def court_curves(names: list[str], profile: CourtProfile = NBA) -> list[np.ndarray]:
     """Sampled court-model lines (each an ordered (N, 2) array in feet)."""
     rim_x, rim_y = RIM_CENTER
+    three_pt_radius = profile.three_pt_radius_ft
     curves: list[np.ndarray] = []
     if "three" in names:
         theta = np.linspace(0.39, np.pi - 0.39, 80)
         arc = np.stack(
-            [rim_x + THREE_PT_RADIUS * np.cos(theta), rim_y + THREE_PT_RADIUS * np.sin(theta)],
+            [rim_x + three_pt_radius * np.cos(theta), rim_y + three_pt_radius * np.sin(theta)],
             axis=1,
         )
         curves.append(arc[arc[:, 1] <= COURT_LENGTH_FT])
@@ -325,9 +335,11 @@ def refine(
     iterations: int = 5,
     corner_weight: float = 12.0,
     search_px: int = 12,
+    profile: CourtProfile = NBA,
 ) -> CourtCalibration:
     """Joint fit: court lines matched to dark pixels + paint corners as anchors."""
-    curves = court_curves(curve_names)
+    curves = court_curves(curve_names, profile)
+    paint_corners = paint_corners_ft(profile)
     g_init = np.linalg.inv(initial.homography)
     params = (g_init / g_init[2, 2]).flatten()[:8]
 
@@ -349,10 +361,12 @@ def refine(
             print("refine: too few line matches — keeping the corner-only homography")
             break
 
-        def residuals(p: np.ndarray, model=model, target=target, normal=normal) -> np.ndarray:
+        def residuals(
+            p: np.ndarray, model=model, target=target, normal=normal, paint=paint_corners
+        ) -> np.ndarray:
             g_p = _to_matrix(p)
             line = ((_apply(g_p, model) - target) * normal).sum(axis=1)
-            anchors = (_apply(g_p, PAINT_CORNERS_FT) - corners_px).ravel() * corner_weight
+            anchors = (_apply(g_p, paint) - corners_px).ravel() * corner_weight
             return np.concatenate([line, anchors])
 
         result = least_squares(residuals, params, loss="huber", f_scale=3.0, x_scale="jac")
@@ -363,7 +377,7 @@ def refine(
 
     g = _to_matrix(params)
     h = np.linalg.inv(g)
-    return CourtCalibration(h / h[2, 2], corners_px, PAINT_CORNERS_FT.copy())
+    return CourtCalibration(h / h[2, 2], corners_px, paint_corners.copy())
 
 
 # ---------------------------------------------------------------------------
@@ -388,14 +402,19 @@ def detect_basket_px(frame: np.ndarray, weights: str) -> tuple[float, float]:
     return max(rims, key=lambda d: d.confidence).center
 
 
-def draw_overlay(frame: np.ndarray, calib: CourtCalibration, curve_names: list[str]) -> np.ndarray:
+def draw_overlay(
+    frame: np.ndarray,
+    calib: CourtCalibration,
+    curve_names: list[str],
+    profile: CourtProfile = NBA,
+) -> np.ndarray:
     canvas = frame.copy()
     height, width = frame.shape[:2]
-    left, right = 25.0 - PAINT_HALF_WIDTH, 25.0 + PAINT_HALF_WIDTH
+    left, right = 25.0 - profile.lane_half_width_ft, 25.0 + profile.lane_half_width_ft
     paint_outline = np.array(
         [[left, 0.0], [right, 0.0], [right, FT_LINE_Y], [left, FT_LINE_Y], [left, 0.0]]
     )
-    for points_ft in [paint_outline, *court_curves(curve_names)]:
+    for points_ft in [paint_outline, *court_curves(curve_names, profile)]:
         points_px = calib.to_image(points_ft)
         inside = (
             (points_px[:, 0] >= -width)
@@ -458,8 +477,15 @@ def main() -> None:
     )
     parser.add_argument("--no-refine", action="store_true", help="stop at the 4-corner homography")
     parser.add_argument("--flip", action="store_true", help="camera behind the baseline / mirrored")
+    parser.add_argument(
+        "--profile",
+        default="nba",
+        choices=sorted(PROFILES),
+        help="court level: lane width + 3-pt radius geometry (default nba)",
+    )
     args = parser.parse_args()
 
+    profile = PROFILES[args.profile]
     curve_names = [c.strip() for c in args.curves.split(",") if c.strip()]
     unknown = set(curve_names) - set(CURVE_CHOICES)
     if unknown:
@@ -479,18 +505,18 @@ def main() -> None:
     corners_px = order_paint_corners(quad_from_mask(component), basket_px, flip=args.flip)
     print("paint corners (px):", corners_px.round(1).tolist())
 
-    calib = CourtCalibration.from_points(corners_px, PAINT_CORNERS_FT)
+    calib = CourtCalibration.from_points(corners_px, paint_corners_ft(profile))
     print(f"initial corner reprojection error: {calib.reprojection_error_ft():.2f} ft")
 
     if not args.no_refine:
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        calib = refine(gray, corners_px, calib, curve_names)
+        calib = refine(gray, corners_px, calib, curve_names, profile=profile)
         print(f"refined corner reprojection error: {calib.reprojection_error_ft():.2f} ft")
 
     calib.save(args.output)
     print(f"saved {args.output}")
     if args.overlay:
-        cv2.imwrite(args.overlay, draw_overlay(frame, calib, curve_names))
+        cv2.imwrite(args.overlay, draw_overlay(frame, calib, curve_names, profile))
         print(f"saved {args.overlay}")
 
 

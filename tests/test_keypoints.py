@@ -6,8 +6,13 @@ import numpy as np
 from hoopvision.court import (
     COURT_LENGTH_FT,
     COURT_WIDTH_FT,
+    HIGH_SCHOOL,
     KEYPOINT_COURT_FT,
+    KEYPOINT_NAMES,
+    NBA,
+    NCAA,
     CourtCalibration,
+    keypoints_ft,
 )
 from hoopvision.keypoints import (
     FLIP_INDEX,
@@ -115,3 +120,48 @@ def test_color_jitter_preserves_shape_and_dtype():
     out = color_jitter(frame, rng)
     assert out.shape == frame.shape
     assert out.dtype == np.uint8
+
+
+# --- court geometry profiles -------------------------------------------------
+
+
+def test_nba_profile_reproduces_default_schema():
+    # The module-level (NBA) schema must equal keypoints_ft(NBA) exactly, and be
+    # fully defined (no NaN) — locks backward compatibility.
+    np.testing.assert_array_equal(keypoints_ft(NBA), KEYPOINT_COURT_FT)
+    assert np.isfinite(KEYPOINT_COURT_FT).all()
+
+
+def test_hs_profile_narrows_paint_and_shortens_arc():
+    hs = keypoints_ft(HIGH_SCHOOL)
+    idx = {name: i for i, name in enumerate(KEYPOINT_NAMES)}
+    # High-school lane is 12 ft wide (half 6) vs NBA 16 ft (half 8).
+    assert hs[idx["paint-left-baseline"], 0] == 25.0 - 6.0
+    assert hs[idx["paint-right-baseline"], 0] == 25.0 + 6.0
+    # Shorter 3-pt line → arc top closer to the baseline than NBA's 29 ft.
+    assert hs[idx["three-pt-arc-top"], 1] < KEYPOINT_COURT_FT[idx["three-pt-arc-top"], 1]
+    # Pure-arc court has no straight corner-three landmark.
+    assert np.isnan(hs[idx["corner-three-left"]]).all()
+    assert np.isnan(hs[idx["corner-three-right"]]).all()
+
+
+def test_ncaa_profile_defined_except_corner_threes():
+    ncaa = keypoints_ft(NCAA)
+    idx = {name: i for i, name in enumerate(KEYPOINT_NAMES)}
+    corner_rows = [idx["corner-three-left"], idx["corner-three-right"]]
+    defined = np.isfinite(ncaa).all(axis=1)
+    assert not defined[corner_rows[0]] and not defined[corner_rows[1]]
+    # Everything else is defined.
+    assert defined.sum() == len(KEYPOINT_NAMES) - 2
+
+
+def test_project_marks_undefined_landmarks_absent():
+    # A profile's NaN landmarks are V_ABSENT even when they would be on-screen.
+    kp_nba = project_keypoints(_calib(), W, H, KEYPOINT_COURT_FT)
+    kp_hs = project_keypoints(_calib(), W, H, keypoints_ft(HIGH_SCHOOL))
+    idx = {name: i for i, name in enumerate(KEYPOINT_NAMES)}
+    for name in ("corner-three-left", "corner-three-right"):
+        assert kp_hs[idx[name], 2] == V_ABSENT
+        assert (kp_hs[idx[name], :2] == 0).all()
+    # A shared landmark (rim) stays visible under both profiles.
+    assert kp_nba[idx["rim-center"], 2] == kp_hs[idx["rim-center"], 2]

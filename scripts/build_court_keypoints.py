@@ -12,11 +12,13 @@ the printed summary numbers.
 
 Usage:
     uv run python scripts/build_court_keypoints.py \
-        --source data/clips/hudl_static2.mp4 calib_hudl_static2.json \
+        --source data/clips/hudl_static2.mp4 calib_hudl_static2.json nba \
         --output data/court_kpts --stride 15 --augment 4 \
         --overlay docs/court_keypoints_sample.jpg
 
-`--source CLIP CALIB` is repeatable to pool several clips into one dataset.
+`--source CLIP CALIB PROFILE` is repeatable to pool clips of different court
+levels (nba/ncaa/hs) into one dataset; each clip declares its own geometry so
+the projected landmarks stay metrically correct.
 """
 
 from __future__ import annotations
@@ -31,7 +33,12 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from hoopvision.court import KEYPOINT_NAMES, CourtCalibration  # noqa: E402
+from hoopvision.court import (  # noqa: E402
+    KEYPOINT_NAMES,
+    PROFILES,
+    CourtCalibration,
+    keypoints_ft,
+)
 from hoopvision.ingest import frames  # noqa: E402
 from hoopvision.keypoints import (  # noqa: E402
     NUM_KEYPOINTS,
@@ -103,13 +110,18 @@ def build(args: argparse.Namespace) -> dict:
     per_source: dict[str, int] = {}
     overlay_saved = False
 
-    for clip_path, calib_path in args.source:
+    for clip_path, calib_path, profile_name in args.source:
+        if profile_name not in PROFILES:
+            raise SystemExit(
+                f"unknown court profile {profile_name!r}; choose from {list(PROFILES)}"
+            )
         calib = CourtCalibration.load(calib_path)
+        court_ft = keypoints_ft(PROFILES[profile_name])
         source = Path(clip_path).name
         per_source[source] = 0
         for _, frame in frames(clip_path, stride=args.stride, max_frames=args.max_frames):
             h, w = frame.shape[:2]
-            base_kp = project_keypoints(calib, w, h)
+            base_kp = project_keypoints(calib, w, h, court_ft)
             if int((base_kp[:, 2] > 0).sum()) < MIN_VISIBLE:
                 continue
 
@@ -142,6 +154,7 @@ def build(args: argparse.Namespace) -> dict:
                         "width": w,
                         "height": h,
                         "source": source,
+                        "profile": profile_name,
                     }
                 )
                 annotations.append(_record(kp, image_id, len(annotations)))
@@ -169,6 +182,7 @@ def build(args: argparse.Namespace) -> dict:
         "keypoints_per_image_mean": round(float(np.mean(visible)), 2) if visible else 0.0,
         "keypoints_total": NUM_KEYPOINTS,
         "per_source": per_source,
+        "profiles": sorted({p for _c, _k, p in args.source}),
         "overlay": args.overlay if overlay_saved else None,
     }
 
@@ -177,11 +191,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--source",
-        nargs=2,
+        nargs=3,
         action="append",
-        metavar=("CLIP", "CALIB"),
+        metavar=("CLIP", "CALIB", "PROFILE"),
         required=True,
-        help="clip video + its calibration JSON (repeatable)",
+        help=f"clip video + calibration JSON + court profile {list(PROFILES)} (repeatable)",
     )
     parser.add_argument("--output", default="data/court_kpts", help="dataset dir")
     parser.add_argument("--stride", type=int, default=15, help="keep every n-th frame")
