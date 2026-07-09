@@ -80,8 +80,14 @@ def draw_overlay(frame: np.ndarray, keypoints: np.ndarray) -> np.ndarray:
         cv2.circle(out, p, 5, (0, 255, 0), -1)
         cv2.circle(out, p, 6, (0, 0, 0), 1)
         cv2.putText(
-            out, str(i), (p[0] + 7, p[1] - 7),
-            cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 255), 1, cv2.LINE_AA,
+            out,
+            str(i),
+            (p[0] + 7, p[1] - 7),
+            cv2.FONT_HERSHEY_SIMPLEX,
+            0.5,
+            (0, 255, 255),
+            1,
+            cv2.LINE_AA,
         )
     return out
 

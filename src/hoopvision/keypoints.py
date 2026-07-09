@@ -53,9 +53,7 @@ def _mirror_index() -> np.ndarray:
 FLIP_INDEX = _mirror_index()
 
 
-def project_keypoints(
-    calibration: CourtCalibration, width: int, height: int
-) -> np.ndarray:
+def project_keypoints(calibration: CourtCalibration, width: int, height: int) -> np.ndarray:
     """Project the court-keypoint schema into one frame.
 
     Returns an (K, 3) array of columns (x_px, y_px, visibility). A keypoint is
@@ -65,9 +63,7 @@ def project_keypoints(
     px = calibration.to_image(KEYPOINT_COURT_FT)
     out = np.zeros((NUM_KEYPOINTS, 3), dtype=np.float64)
     out[:, :2] = px
-    inside = (
-        (px[:, 0] >= 0) & (px[:, 0] < width) & (px[:, 1] >= 0) & (px[:, 1] < height)
-    )
+    inside = (px[:, 0] >= 0) & (px[:, 0] < width) & (px[:, 1] >= 0) & (px[:, 1] < height)
     out[inside, 2] = V_VISIBLE
     out[~inside, :2] = 0.0
     return out
@@ -83,9 +79,7 @@ def random_homography(
     virtual camera motion. Returns a 3x3 matrix.
     """
     d = jitter * min(width, height)
-    src = np.array(
-        [[0, 0], [width, 0], [width, height], [0, height]], dtype=np.float64
-    )
+    src = np.array([[0, 0], [width, 0], [width, height], [0, height]], dtype=np.float64)
     dst = src + rng.uniform(-d, d, size=src.shape)
     h, _ = cv2.findHomography(src, dst, method=0)
     if h is None:  # pragma: no cover - only on degenerate jitter
@@ -105,9 +99,7 @@ def warp_keypoints(keypoints: np.ndarray, h: np.ndarray, width: int, height: int
         pts = keypoints[visible, :2].reshape(-1, 1, 2)
         warped = cv2.perspectiveTransform(pts, h).reshape(-1, 2)
         out[visible, :2] = warped
-    inside = (
-        (out[:, 0] >= 0) & (out[:, 0] < width) & (out[:, 1] >= 0) & (out[:, 1] < height)
-    )
+    inside = (out[:, 0] >= 0) & (out[:, 0] < width) & (out[:, 1] >= 0) & (out[:, 1] < height)
     keep = visible & inside
     out[:, 2] = np.where(keep, V_VISIBLE, V_ABSENT)
     out[~keep, :2] = 0.0
