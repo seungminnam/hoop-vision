@@ -16,6 +16,9 @@
 > compares Hoop Vision to two reference basketball-CV projects and ranks what
 > to adopt (appearance tracking, speed/distance stats, camera-motion
 > compensation, jersey OCR) against this roadmap.
+> [docs/decisions.md](docs/decisions.md) is the ADR log — the *why* behind
+> notable design/plan forks (court profiles, the NCAA recalibration, the v2
+> external-dataset adoption).
 
 ---
 
@@ -196,6 +199,17 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   heatmap model. The generation is $0 and one command per clip.
 
 ### 4.2 Keypoint model + per-frame registration
+
+> **Data strategy update (2026-07-09, [ADR-003](docs/decisions.md)).** Rather
+> than train only on our single-court (NCAA) pseudo-labels — which overfit one
+> gym — adopt a public **multi-venue court-keypoint dataset** as the training
+> backbone (`roboflow-jvuqo/basketball-court-detection-2`, CC BY 4.0, used by
+> the MIT `roboflow/sports` repo), keeping the §4.1 pseudo-label factory as a
+> complement for our own clips. This directly attacks overfit and aligns with
+> the NBA-stats goal (the same repo ships a jersey-number OCR dataset that
+> revives the shelved "D" task). Trade-off: the external court-keypoint schema
+> differs from our 16-pt `court.COURT_KEYPOINTS`, so adopting it means
+> retargeting/mapping the schema — pending dataset inspection.
 
 - Small heatmap model predicting landmark locations + visibility. Two paths:
   fine-tune YOLO11n-pose, or extend the in-repo CenterNet-lite with K heatmap
