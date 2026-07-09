@@ -44,6 +44,37 @@ LANDMARKS: dict[str, tuple[float, float]] = {
     "ft-line-right": (25.0 + PAINT_HALF_WIDTH, FT_LINE_Y),
 }
 
+# Ordered keypoint schema for the v2 court-registration model. The index is a
+# permanent contract: it is the heatmap channel a keypoint model predicts and
+# the column order in every pseudo-labeled annotation, so APPEND ONLY — never
+# reorder or delete an entry once a dataset or checkpoint depends on it.
+#
+# Points are geometrically unambiguous court features a human (or ICP-refined
+# homography) can locate: line intersections, arc/circle extrema, corners.
+COURT_KEYPOINTS: list[tuple[str, float, float]] = [
+    ("baseline-left-corner", 0.0, 0.0),
+    ("baseline-right-corner", COURT_WIDTH_FT, 0.0),
+    ("paint-left-baseline", 25.0 - PAINT_HALF_WIDTH, 0.0),
+    ("paint-right-baseline", 25.0 + PAINT_HALF_WIDTH, 0.0),
+    ("ft-line-left", 25.0 - PAINT_HALF_WIDTH, FT_LINE_Y),
+    ("ft-line-right", 25.0 + PAINT_HALF_WIDTH, FT_LINE_Y),
+    ("ft-line-center", 25.0, FT_LINE_Y),
+    ("ft-circle-top", 25.0, FT_LINE_Y + FT_CIRCLE_RADIUS),
+    ("three-pt-arc-top", 25.0, RIM_CENTER[1] + THREE_PT_RADIUS),
+    ("corner-three-left", CORNER_THREE_X, CORNER_THREE_Y),
+    ("corner-three-right", COURT_WIDTH_FT - CORNER_THREE_X, CORNER_THREE_Y),
+    ("rim-center", RIM_CENTER[0], RIM_CENTER[1]),
+    ("halfcourt-left-corner", 0.0, COURT_LENGTH_FT),
+    ("halfcourt-right-corner", COURT_WIDTH_FT, COURT_LENGTH_FT),
+    ("halfcourt-center", 25.0, COURT_LENGTH_FT),
+    ("center-circle-near", 25.0, COURT_LENGTH_FT - FT_CIRCLE_RADIUS),
+]
+
+KEYPOINT_NAMES: list[str] = [name for name, _x, _y in COURT_KEYPOINTS]
+KEYPOINT_COURT_FT: np.ndarray = np.array(
+    [(x, y) for _name, x, y in COURT_KEYPOINTS], dtype=np.float64
+)
+
 
 @dataclass
 class CourtCalibration:

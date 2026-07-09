@@ -50,7 +50,7 @@ samples, especially `hudl_seg1`):
 | Phase | Theme | One-line goal | Status |
 |---|---|---|---|
 | v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ◐ measurement harness done; labels + fixes next |
-| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ☐ not started |
+| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ pseudo-label factory done (§4.1); model + runtime next |
 | v3 | Product: "Hudl-lite" | Auto game report for amateur teams (stats, shot charts, highlights) on the free stack | ☐ not started |
 
 ## 2. Working agreements (unchanged from v1 — do not relax)
@@ -163,16 +163,30 @@ the literature as *sports field registration* — recognizable, resume-worthy.
 calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
 (b) a per-frame runtime with temporal smoothing.
 
-### 4.1 Court keypoint dataset (pseudo-labeled, $0)
+### 4.1 Court keypoint dataset (pseudo-labeled, $0) — ✅ done
 
-- Run `auto_calibrate.py` over the static windows already cataloged in
-  `data/README.md`; project a fixed landmark set (paint corners, FT-line
-  ends, arc extremes, halfcourt intersections — extend `court.LANDMARKS`)
-  into each frame → keypoint annotations for free.
-- Augment with synthetic homography warps + color jitter of those frames to
-  simulate pans/zooms. Target: a few thousand frames without hand labeling.
-- **Accept:** dataset builder script committed; sample overlays visually
-  correct (spot-check like the v1 corner-compare workflow).
+- ✅ **Keypoint schema** — `court.COURT_KEYPOINTS`: 16 ordered, geometrically
+  unambiguous landmarks (baseline/paint/halfcourt corners, FT line + circle,
+  3-pt arc top, corner threes, rim, center circle). The index is a permanent
+  contract (heatmap channel / annotation column order), so append-only. A
+  `FLIP_INDEX` for horizontal-mirror augmentation is derived from court
+  geometry, not hand-typed, so it can't drift.
+- ✅ **Pseudo-label factory** — `scripts/build_court_keypoints.py` projects the
+  schema into each frame of a calibrated static clip via `to_image()` and
+  writes a COCO-keypoints dataset. Pure geometry/augmentation lives in
+  `src/hoopvision/keypoints.py` (unit-tested, no video I/O).
+- ✅ **Augmentation** — random image→image homography warps (virtual
+  pans/zooms/tilts), 50% horizontal flips with correct landmark relabeling,
+  and brightness/contrast/hue jitter. Off-frame landmarks are dropped
+  (visibility flag), matching the ≥4-point homography gate.
+- ✅ **Spot-check** — `docs/court_keypoints_sample.jpg`: projected keypoints on
+  a `hudl_static2` frame form a coherent court constellation, consistent with
+  the v1-validated homography (1.7 ft reprojection @ 360p). First run: 80
+  samples from 20 frames (×3 aug), mean 15/16 landmarks visible.
+- Dataset image bytes land under gitignored `data/court_kpts/` (regenerable;
+  we never commit raw broadcast frames).
+- **Next (4.2):** pool more static clips + higher-res sources, then train the
+  heatmap model. The generation is $0 and one command per clip.
 
 ### 4.2 Keypoint model + per-frame registration
 
