@@ -53,17 +53,33 @@ def _mirror_index() -> np.ndarray:
 FLIP_INDEX = _mirror_index()
 
 
-def project_keypoints(calibration: CourtCalibration, width: int, height: int) -> np.ndarray:
+def project_keypoints(
+    calibration: CourtCalibration,
+    width: int,
+    height: int,
+    court_ft: np.ndarray | None = None,
+) -> np.ndarray:
     """Project the court-keypoint schema into one frame.
 
     Returns an (K, 3) array of columns (x_px, y_px, visibility). A keypoint is
     `V_VISIBLE` when it lands inside the frame, else `V_ABSENT` with its pixel
     coordinates zeroed (no meaningful target for an off-frame landmark).
+
+    `court_ft` is the (K, 2) court-feet schema to project — pass a court
+    profile's `court.keypoints_ft(profile)` for non-NBA levels. Landmarks a
+    profile leaves undefined are `np.nan` and come back `V_ABSENT`. Defaults to
+    the NBA schema.
     """
-    px = calibration.to_image(KEYPOINT_COURT_FT)
-    out = np.zeros((NUM_KEYPOINTS, 3), dtype=np.float64)
-    out[:, :2] = px
-    inside = (px[:, 0] >= 0) & (px[:, 0] < width) & (px[:, 1] >= 0) & (px[:, 1] < height)
+    if court_ft is None:
+        court_ft = KEYPOINT_COURT_FT
+    out = np.zeros((len(court_ft), 3), dtype=np.float64)
+    defined = np.isfinite(court_ft).all(axis=1)
+    if defined.any():
+        px = calibration.to_image(court_ft[defined])
+        out[defined, :2] = px
+    inside = (
+        defined & (out[:, 0] >= 0) & (out[:, 0] < width) & (out[:, 1] >= 0) & (out[:, 1] < height)
+    )
     out[inside, 2] = V_VISIBLE
     out[~inside, :2] = 0.0
     return out

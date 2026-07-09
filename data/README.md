@@ -100,11 +100,23 @@ producing a COCO-keypoints dataset for training a per-frame registration model.
 
 ```bash
 uv run python scripts/build_court_keypoints.py \
-    --source data/clips/hudl_static2.mp4 calib_hudl_static2.json \
+    --source data/clips/hudl_static2.mp4 calib_hudl_static2.json ncaa \
     --output data/court_kpts --stride 15 --augment 4 \
     --overlay docs/court_keypoints_sample.jpg
-# pool more clips by repeating --source CLIP CALIB
+# pool clips of different levels by repeating --source CLIP CALIB PROFILE
 ```
+
+**Court geometry profiles.** Court dimensions vary by level (NBA 16 ft lane /
+23.75 ft arc, NCAA 12 ft / 22.15 ft, HS 12 ft / 19.75 ft), so each clip
+declares its profile (`court.PROFILES`); the projected landmarks use that
+level's coordinates and any landmark a level doesn't have (e.g. the straight
+corner-three segment on a pure-arc court) is dropped. `auto_calibrate.py
+--profile` uses the same models. Empirically this also identifies a clip's
+court type: re-fitting `hudl_static2` (same frame/curves) gives NBA 2.14 ft /
+**NCAA 0.87 ft** / HS 1.03 ft refined reprojection — it is an NCAA-dimension
+court, so v1's NBA-assumed 1.7 ft was the wrong geometry. Regenerating
+`calib_hudl_static2.json` (and its samples) with `--profile ncaa` is a pending
+accuracy win.
 
 `court_kpts/` (images + `annotations.json`) is **gitignored** — regenerable,
 tied to the calibrations, and we never commit raw broadcast frames. The only
