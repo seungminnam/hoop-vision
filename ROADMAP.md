@@ -286,10 +286,17 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   read 113/339 times across four concurrent tracks — so **read *precision* on a
   720p panning broadcast is the bottleneck**, not the match/vote/merge logic.
   Ships as a hybrid (per-player where read, per-track otherwise);
-  `docs/player_identity_nba.json` exposes `read_rate` etc. Levers to raise it:
-  appearance stitching before reading, stricter detector gate, an abstain class.
+  `docs/player_identity_nba.json` exposes `read_rate` etc.
+- ✅ **Court-space stitching before reading (task E, [ADR-010](docs/decisions.md)).**
+  `stitch.stitch_court` merges fragments in camera-invariant feet (speed-bounded
+  gate) *before* voting. Measured off→on on the same clip: tracks 107 → **53**,
+  median votes/read-track 4 → **9**, read rate 0.075 → **0.113**, and a correct
+  read's stats get more complete (#11: 374 → 502 frames). **But distinct named
+  players barely moves** (~5 → ~4): both runs are dominated by the bogus "#22",
+  confirming that **precision, not fragmentation, is the wall**. Kept on by
+  default (it makes movement stats per-player); precision is the next lever.
 - **Accept:** ✅ pure logic unit-tested; per-player stats + honest read rate on
-  `_nba_raw`; weights released; ADR-009 + README/ROADMAP updated.
+  `_nba_raw`; weights released; ADR-009/010 + README/ROADMAP updated.
 
 **Deliverables:** dataset builder, keypoint trainer/eval, smoothed runtime,
 new demo sample, README section with metrics.

@@ -104,6 +104,25 @@ class TrackletBuilder:
         return tracklets
 
 
+@dataclass
+class CourtTracklet:
+    """A tracklet in court space (feet) for stitching on a *panning* clip.
+
+    Unlike `Tracklet` (image pixels), the positions are camera-invariant court
+    coordinates recovered by §4.2 registration, so the spatial gate becomes a
+    physical speed bound instead of a box-scale factor — the right frame for a
+    moving broadcast camera, where a player reappears at an arbitrary pixel but
+    a bounded number of feet away.
+    """
+
+    track_id: int
+    start_frame: int
+    end_frame: int
+    start_ft: tuple[float, float]  # court position (feet) at start
+    end_ft: tuple[float, float]  # court position (feet) at end
+    feature: np.ndarray  # L2-normalized torso-colour histogram
+
+
 def _cosine(a: np.ndarray, b: np.ndarray) -> float:
     if a.shape != b.shape:
         return 0.0
@@ -170,6 +189,81 @@ def stitch(
             g_end_h[best_root] = b.end_h
 
     # canonical id = smallest original id in each group (stable, readable)
+    groups: dict[int, list[int]] = {}
+    for t in order:
+        groups.setdefault(find(t.track_id), []).append(t.track_id)
+    remap = {}
+    for members in groups.values():
+        canonical = min(members)
+        for m in members:
+            remap[m] = canonical
+    return remap
+
+
+def stitch_court(
+    tracklets: list[CourtTracklet],
+    fps: float,
+    max_gap_s: float = 1.5,
+    base_ft: float = 3.0,
+    max_speed_fps: float = 25.0,
+    min_similarity: float = 0.5,
+) -> dict[int, int]:
+    """Return a remap {track_id: canonical_id} stitching fragments in court feet.
+
+    A successor tracklet joins a predecessor group when it (a) starts after the
+    group ends within `max_gap_s` seconds (disjoint in time), (b) reappears
+    within a *speed-bounded* court distance `base_ft + max_speed_fps * gap_s`
+    (so a longer gap forgives a longer move, matching real running), and (c) has
+    a similar torso-colour histogram (cosine ≥ `min_similarity`). Merged groups
+    keep disjoint frame ranges, so two players on court at once never collapse.
+
+    This is the panning-clip analogue of `stitch()`: same union-find, but the
+    spatial gate is physical feet (camera-invariant) rather than image pixels,
+    which drift under the pan. `max_speed_fps` is deliberately below the sprint
+    ceiling used elsewhere — a conservative gate spreads less contamination.
+    """
+    order = sorted(tracklets, key=lambda t: t.start_frame)
+    parent = {t.track_id: t.track_id for t in order}
+    g_end = {t.track_id: t.end_frame for t in order}
+    g_end_ft = {t.track_id: t.end_ft for t in order}
+    g_feat = {t.track_id: t.feature for t in order}
+
+    def find(x: int) -> int:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for b in order:
+        best_root, best_score = None, -np.inf
+        for a in order:
+            if a.start_frame >= b.start_frame:
+                continue
+            root = find(a.track_id)
+            if root == find(b.track_id):
+                continue
+            gap_frames = b.start_frame - g_end[root]
+            if gap_frames <= 0:  # must be disjoint in time
+                continue
+            gap_s = gap_frames / fps
+            if gap_s > max_gap_s:
+                continue
+            ex, ey = g_end_ft[root]
+            dist = float(np.hypot(ex - b.start_ft[0], ey - b.start_ft[1]))
+            max_dist = base_ft + max_speed_fps * gap_s
+            if dist > max_dist:
+                continue
+            sim = _cosine(g_feat[root], b.feature)
+            if sim < min_similarity:
+                continue
+            score = sim - 0.5 * (dist / max_dist) - 0.5 * (gap_s / max_gap_s)
+            if score > best_score:
+                best_root, best_score = root, score
+        if best_root is not None:
+            parent[find(b.track_id)] = best_root
+            g_end[best_root] = b.end_frame
+            g_end_ft[best_root] = b.end_ft
+
     groups: dict[int, list[int]] = {}
     for t in order:
         groups.setdefault(find(t.track_id), []).append(t.track_id)
