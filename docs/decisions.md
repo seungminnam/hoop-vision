@@ -258,3 +258,42 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   it — next backlog item). **Shot events deferred**: 720p broadcast ball/rim
   detection quality is unmeasured, so this slice ships movement stats + occupancy
   and leaves shot charts to a later PR after ball-coverage is measured.
+
+## ADR-008 — Unblock task D (jersey identity): adopt two NBA datasets, detect+classify
+
+- **Date:** 2026-07-10 · **Status:** accepted (D-1)
+- **Context.** §4.3 stats are per *track*, not per *player* — the last gap to the
+  north star (named box scores). Jersey OCR was shelved 2026-07-08 as
+  "blocked by data" (`reference-analysis.md` §D): our Hudl footage is 360p
+  (digits ~15–20 px, illegible) and our pickup footage has no numbers. The
+  dataset authors (ADR-005) publish NBA-broadcast datasets that lift exactly that
+  constraint.
+- **Inspection (reproducible via `scripts/inspect_jersey_datasets.py`).**
+  - `basketball-jersey-numbers-ocr` v3 — **text-image-pairs** (a `.jsonl` maps
+    each crop to a `suffix` number string, not a class). **3,188 crops**
+    (train 2547 / valid 324 / test 317), all **224×224**, **40 number classes**
+    (0–77, incl. "00") + 52 empty/unreadable, well balanced (max "8"=269, min=10,
+    none < 5 samples), CC BY 4.0.
+  - `basketball-player-detection-3-ycjdo` v1 — YOLOv11 detection, **10 classes**,
+    411 imgs (285/63/63) at 1280×1280, CC BY 4.0. `number`=2469, `player`=3853,
+    `referee`=1128, `ball`=373, `rim`=406; the **action classes are too rare to
+    train** (player-in-possession 56, jump-shot 76, layup-dunk 11, shot-block 65,
+    ball-in-basket 27). Both are the same NBA-playoff ecosystem as the court
+    dataset (Nuggets–Clippers, Knicks–Pistons, …).
+- **Decision.** Adopt both. Architecture = **detect the `number` box → crop →
+  classify the number** (40-way closed set), mirroring the authors' validated
+  path (their ResNet-32 beat a fine-tuned VLM, 93 vs 86%). D-2 trains a number
+  detector, D-3 a 224² crop classifier, D-4 wires read → vote → track-merge.
+- **Options rejected.** (1) *Classify torso crops directly* (skip detection):
+  the number is visible in only a fraction of frames, so a whole-torso classifier
+  drowns in numberless views — the authors localize the digit first for a reason.
+  (2) *VLM OCR* (SmolVLM2): heavier, and lost to a small classifier on their own
+  data; against the $0 / lightweight rule.
+- **Consequences / risk (the key finding).** **Number boxes are tiny**:
+  median **12.5 × 17.4 px at native 1280×720**, ~6 px wide at 640. The §4.3
+  runtime processes 640×640 frames, so number detection must run at **native
+  resolution (imgsz≈1280)**, not the 640 the court detector uses — a real
+  speed/accuracy trade the D-2/D-4 work must carry. The empty/unreadable class
+  maps to "unknown" (abstains from voting). `referee` is a bonus class v1 lacks
+  (can exclude refs from player stats). Roster (number→name) mapping is out of
+  scope — "player #12" is the target.

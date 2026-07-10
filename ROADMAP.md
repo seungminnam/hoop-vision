@@ -300,11 +300,14 @@ prediction).
      Remaining slice-1 polish: made/missed timeline, downloadable report bundle.
 2. **Auto-highlights.** Cut ±N seconds around each shot event with ffmpeg,
    stitch a highlight reel; "made shots only" toggle. Cheap, high demo value.
-3. ⊘ **Per-player identity (jersey OCR) — blocked by data.** Feasibility
-   probed 2026-07-08: the numbered footage (Hudl HS) is 360p with ~15–20 px
-   digits (below reliable OCR), and the 1080p pickup footage has no jersey
-   numbers. Needs footage that is both numbered and ≥720p; not attempted until
-   such data exists (see docs/reference-analysis.md §D).
+3. ◐ **Per-player identity (jersey OCR) — unblocked, in progress.** Was blocked
+   by data 2026-07-08 (our footage was 360p or numberless). **Unblocked
+   2026-07-10 ([ADR-008](docs/decisions.md))** by two public NBA-broadcast
+   datasets (`basketball-jersey-numbers-ocr` 3,188 crops → digits;
+   `basketball-player-detection-3-ycjdo` with a `number` class). Plan: detect
+   number → crop → classify → vote → merge tracks, upgrading §4.3's per-track
+   stats to per-player. Live risk is resolution (number boxes ~12–17 px), not
+   data (see docs/reference-analysis.md §D).
 4. **Batch/local runner.** CLI to process a full game and emit the report;
    the hosted app stays precomputed-samples-only (free-tier limits — same
    split as v1).

@@ -168,6 +168,39 @@ distorted, but the homography absorbs it — matched at inference by resizing to
 640×640); the 33-point schema had no published real-world template, so Phase 2
 derived + validated one (`hoopvision.court_template`, [decisions ADR-005](../docs/decisions.md)).
 
+## Jersey-number identity (task D) — two external datasets
+
+To turn per-*track* stats into per-*player* stats (§4.3 → named box scores),
+task D detects each jersey number and reads it (see
+[../docs/decisions.md](../docs/decisions.md) ADR-008). Two datasets from the
+same NBA-broadcast authors, both **CC BY 4.0**:
+
+| Field | `basketball-jersey-numbers-ocr` (v3) | `basketball-player-detection-3-ycjdo` (v1) |
+|---|---|---|
+| URL | https://universe.roboflow.com/roboflow-jvuqo/basketball-jersey-numbers-ocr | https://universe.roboflow.com/roboflow-jvuqo/basketball-player-detection-3-ycjdo |
+| Purpose | number crop → digit string (classifier) | detect the `number` box (+ players/refs) |
+| Format | text-image-pairs (`.jsonl`), crops 224×224 | YOLOv11 detection, 1280×1280 |
+| Size | 3,188 crops (2547/324/317) | 411 imgs (285/63/63) |
+| Labels | 40 numbers (0–77, incl. "00") + 52 unreadable | 10 classes; `number`=2469, `player`=3853, `referee`=1128 |
+
+Key finding (drives task D): **number boxes are ~12.5 × 17.4 px at native
+1280×720** (~6 px at 640), so number detection runs at native resolution, not
+the 640 the court detector uses. The action classes (jump-shot, layup, …) are
+too rare (11–76 instances) to train. Reproduce these counts:
+
+```bash
+export ROBOFLOW_API_KEY=...
+uv run --with roboflow python scripts/download_data.py \
+    --workspace roboflow-jvuqo --project basketball-jersey-numbers-ocr --version 3 --format jsonl
+uv run --with roboflow python scripts/download_data.py \
+    --workspace roboflow-jvuqo --project basketball-player-detection-3-ycjdo --version 1 --format yolov11
+uv run python scripts/inspect_jersey_datasets.py
+```
+
+Both raw datasets (`data/basketball-jersey-numbers-ocr-3/`,
+`data/basketball-player-detection-3-ycjdo-1/`) are **gitignored** — real
+broadcast crops, never committed; trained weights ship as a GitHub release.
+
 ## Ethics / legal
 
 - Clips are used for research/demo only.
