@@ -43,7 +43,7 @@ minimap uses a clip on a properly lined court instead.
 |---|---|---|---|---|
 | hudl_static1 (t=599–619s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | static window (verified) | no | lined court; W3 minimap |
 | hudl_static2 (t=1616–1637s) | https://www.youtube.com/watch?v=fqlN0rmPpbE | static window (verified) | no | lined court; calibration `calib_hudl_static2.json` |
-| _nba_raw (t=1800–1840s) | https://www.youtube.com/watch?v=J8WABIinM64 (Grizzlies vs Magic full game) | broadcast — pans, one cut at 37 s | no | v1 out-of-domain detection test; **v2 §4.2 court-registration demo** (`scripts/register_court.py` → `docs/court_registration_nba.gif`) |
+| _nba_raw (t=1800–1840s) | https://www.youtube.com/watch?v=J8WABIinM64 (Grizzlies vs Magic full game) | broadcast — pans, one cut at 37 s | no | v1 out-of-domain detection test; **v2 §4.2 court-registration demo** (`scripts/register_court.py`) and **§4.3 registered player stats** (`scripts/registered_stats.py`; the 30 s window before the 37 s cut) |
 
 The Hudl auto-tracking camera holds still in two ≥20 s windows (found by
 1 fps ceiling-strip phase correlation over the full game, verified by frame
