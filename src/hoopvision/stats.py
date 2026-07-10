@@ -51,30 +51,28 @@ def _smooth(points: np.ndarray, window: int) -> np.ndarray:
     return out
 
 
-def player_stats(
-    analysis,
-    calibration: CourtCalibration,
+TrackPath = list[tuple[float, tuple[float, float], int | None]]  # (time_s, court_xy_ft, team)
+
+
+def stats_from_paths(
+    paths: dict[int, TrackPath],
     min_frames: int = 15,
     smooth_window: int = 5,
     top_percentile: float = 95.0,
 ) -> list[PlayerStat]:
-    """Distance + speed per track, sorted by distance (descending)."""
-    per: dict[int, list[tuple[float, tuple[float, float], int | None]]] = defaultdict(list)
-    for record in analysis.records:
-        t = record.index / analysis.fps
-        for p in record.players:
-            per[p.track_id].append((t, p.foot, p.team))
+    """Distance + speed per track from court-space paths, sorted by distance.
 
+    Coordinate-frame agnostic: `court_xy` may be v1 halfcourt feet (static
+    calibration) or v2 full-court feet (per-frame registration) — Euclidean
+    distances in feet are the same either way. Callers do their own in-bounds
+    filtering before handing paths here.
+    """
     out: list[PlayerStat] = []
-    for track_id, obs in per.items():
+    for track_id, obs in paths.items():
         if len(obs) < min_frames:
             continue
         times = np.array([o[0] for o in obs])
-        court = calibration.to_court(np.array([o[1] for o in obs]))
-        inbounds = calibration.in_bounds(court, margin_ft=2.0)
-        court, times = court[inbounds], times[inbounds]
-        if len(court) < min_frames:
-            continue
+        court = np.array([o[1] for o in obs], dtype=float)
 
         smoothed = _smooth(court, smooth_window)
         seg = np.linalg.norm(np.diff(smoothed, axis=0), axis=1)
@@ -101,6 +99,33 @@ def player_stats(
             )
         )
     return sorted(out, key=lambda s: -s.distance_ft)
+
+
+def player_stats(
+    analysis,
+    calibration: CourtCalibration,
+    min_frames: int = 15,
+    smooth_window: int = 5,
+    top_percentile: float = 95.0,
+) -> list[PlayerStat]:
+    """Distance + speed per track (static calibration), sorted by distance."""
+    per: dict[int, TrackPath] = defaultdict(list)
+    for record in analysis.records:
+        t = record.index / analysis.fps
+        for p in record.players:
+            per[p.track_id].append((t, p.foot, p.team))
+
+    paths: dict[int, TrackPath] = {}
+    for track_id, obs in per.items():
+        court = calibration.to_court(np.array([o[1] for o in obs]))
+        inbounds = calibration.in_bounds(court, margin_ft=2.0)
+        kept: TrackPath = [
+            (obs[i][0], (float(court[i, 0]), float(court[i, 1])), obs[i][2])
+            for i in np.nonzero(inbounds)[0]
+        ]
+        if kept:
+            paths[track_id] = kept
+    return stats_from_paths(paths, min_frames, smooth_window, top_percentile)
 
 
 def court_heatmap(

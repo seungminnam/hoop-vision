@@ -304,8 +304,30 @@ floor as it pans, and detected players map to a top-down minimap
 ![NBA broadcast court registration + player minimap](docs/court_registration_nba.gif)
 
 The far half drifts where few keypoints are visible (honest extrapolation
-limit); the observed half tracks tightly. Next (§4.3): feed these court
-coordinates into the existing shot-chart / stats pipeline.
+limit); the observed half tracks tightly.
+
+**§4.3 — court-coordinate player stats on the panning clip (done).** With
+registration in place, `scripts/registered_stats.py` runs the v1 player detector
++ tracker each frame and maps every player's foot point through the homography,
+so a **panning broadcast** yields the physical stats v1 could only get from a
+static hand-calibration. Because court coordinates are camera-invariant, the
+pan needs no separate motion compensation — the honest win over v1.1's
+camera-motion estimator, which never improved image-space tracking. On the
+Grizzlies–Magic clip (30 s, 900 frames):
+
+| registered stats (30 s panning clip) | value |
+|---|---|
+| frames registered | **900 / 900 (100%)**, above the 0.8 analytics gate |
+| tracks (seen / ≥15 frames) | 100 / 50 |
+| top track distance | **202.6 ft** (6.0 mph avg, 16.7 mph top) |
+
+![Full-court occupancy on a registered NBA broadcast](docs/registered_occupancy_nba.png)
+
+Stats are **per track, not per player** — 30 s of panning + occlusion fragments
+the ~10 on-court players into ~50 tracks, so distances are per-fragment lower
+bounds; naming players needs jersey OCR (shelved task D). Shot events are
+deferred until 720p ball/rim coverage is measured. Numbers reproduce via
+`scripts/registered_stats.py` ([ADR-007](docs/decisions.md)).
 
 ## Demo app
 

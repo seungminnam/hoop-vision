@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 
 from hoopvision.court import COURT_LENGTH_FT, COURT_WIDTH_FT, CourtCalibration
-from hoopvision.stats import MPH_PER_FPS, player_stats
+from hoopvision.stats import MPH_PER_FPS, player_stats, stats_from_paths
 
 
 @dataclass
@@ -88,3 +88,29 @@ def test_sorted_by_distance():
     analysis = _Analysis(fps=10.0, records=records)
     stats = player_stats(analysis, cal, min_frames=5, smooth_window=1)
     assert [s.track_id for s in stats][0] == 1  # the mover ranks first
+
+
+# --- stats_from_paths: the frame-agnostic core used by v2 registered stats ---
+
+
+def test_stats_from_paths_fullcourt_distance_and_speed():
+    # a player crossing full-court feet (x=40..59), +1 ft/frame at 10 fps
+    path = [(i / 10.0, (40.0 + i, 25.0), 0) for i in range(20)]
+    stats = stats_from_paths({7: path}, min_frames=5, smooth_window=1)
+    assert len(stats) == 1
+    s = stats[0]
+    assert s.track_id == 7 and s.team == 0
+    assert abs(s.distance_ft - 19.0) < 1e-6
+    assert abs(s.avg_speed_mph - 10.0 * MPH_PER_FPS) < 0.1
+
+
+def test_stats_from_paths_rejects_teleport_in_fullcourt():
+    # one bad-detection jump across the full 94 ft court must not count
+    path = [(i / 10.0, (10.0 if i != 10 else 90.0, 25.0), None) for i in range(20)]
+    s = stats_from_paths({1: path}, min_frames=5, smooth_window=1)[0]
+    assert s.distance_ft < 5.0
+
+
+def test_stats_from_paths_drops_short_tracks():
+    path = [(i / 10.0, (40.0 + i, 25.0), 0) for i in range(6)]
+    assert stats_from_paths({1: path}, min_frames=15) == []

@@ -214,3 +214,47 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   smoothing, no elevated-point exclusion, and no low-confidence fallback. The
   `CourtRegistrar` (image-space EMA + planar-only fit + last-good gate) is our
   differentiator over that baseline.
+
+## ADR-007 — §4.3: registration-based player stats in full-court feet (no halfcourt adapter)
+
+- **Date:** 2026-07-10 · **Status:** accepted
+- **Context.** §4.2 registers each frame to NBA feet. §4.3 turns that into
+  court-coordinate player stats (distance/speed/occupancy) on a *panning*
+  broadcast — the thing v1 could only do on a hand-calibrated static clip.
+- **Options for the coordinate frame.**
+  1. **Map full-court feet → v1's halfcourt frame** (x0..50, y0..47) to reuse
+     `court.py` / `shotchart.py` / `stats.player_stats` directly. Rejected:
+     a full-court possession spans both halves so a halfcourt frame doesn't fit,
+     the mapping needs an ambiguous "which half" decision near center, and it
+     would add an adapter with no other consumer this slice (YAGNI).
+  2. **Work in full-court feet throughout.** Chosen. Distance/speed are Euclidean
+     in feet, *identical* in either frame, so the v1 math is reused by extracting
+     a coordinate-frame-agnostic `stats.stats_from_paths` (non-breaking refactor;
+     `player_stats` now delegates to it, existing tests unchanged). Occupancy is
+     drawn on the full court (`registration.court_polylines_ft`). v1's halfcourt
+     modules stay untouched.
+- **Decision.** `scripts/registered_stats.py`: per frame, register (§4.2) +
+  detect players (v1 `hoopvision_best.pt`) + track (ByteTrack); map each tracked
+  player's foot through the homography to full-court feet; accumulate per-track
+  paths and feed `stats_from_paths`. Emit per-track distance/speed JSON + a
+  full-court occupancy heatmap.
+- **Rationale — camera-pan invariance for free.** Court coordinates are
+  camera-invariant, so per-frame registration *is* the motion compensation. This
+  is the honest win over v1.1's camera-motion estimator (ROADMAP §3.2 / the GMC
+  work), which did **not** improve image-space tracking: we don't correct the
+  camera, we leave the image-space tracker alone and only transform the foot
+  point after association.
+- **Validation.** On the panning Grizzlies–Magic clip (30 s, 900 frames):
+  **100% of frames registered** (≥ the 0.8 quality gate → analytics reported,
+  not "unavailable"), 100 tracks seen / 50 with ≥15 frames; top track **202.6 ft
+  travelled, 6.0 mph avg, 16.7 mph top** — realistic for an NBA player over the
+  window. Reproduce: `scripts/registered_stats.py`. Committed artifacts:
+  `docs/registered_stats_nba.json`, `docs/registered_occupancy_nba.png`.
+- **Consequences / honest limits.** Stats are **per track, not per player** —
+  30 s of panning + occlusion fragments the ~10 on-court players into ~50 tracks
+  (no appearance stitching applied here; that is a static-clip post-process).
+  Distances are therefore per-fragment lower bounds. Naming players needs jersey
+  OCR (shelved task D; the `basketball-jersey-numbers-ocr` dataset could revive
+  it — next backlog item). **Shot events deferred**: 720p broadcast ball/rim
+  detection quality is unmeasured, so this slice ships movement stats + occupancy
+  and leaves shot charts to a later PR after ball-coverage is measured.
