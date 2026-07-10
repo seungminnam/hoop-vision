@@ -281,7 +281,10 @@ points into one frame from the labels (0.73 px median), then a 15-point seed-fit
 anchors that layout to **exact NBA feet** (`hoopvision.court_template`). The
 template validates on all 1,220 labeled frames at **median 0.17 ft** image→feet
 reprojection ([ADR-005](docs/decisions.md); diagram
-[docs/court_template_nba.png](docs/court_template_nba.png)). The runtime
+[docs/court_template_nba.png](docs/court_template_nba.png)), and cross-checks
+against the dataset authors' own (later-found) court config at **mean 0.09 ft**
+(`scripts/compare_court_template.py`) — the two sideline-hash marks we place at
+28 ft are backed by both the label residuals and the NBA rulebook. The runtime
 (`hoopvision.registration.CourtRegistrar`) fits a RANSAC homography per frame
 over the planar points, smooths it (EMA + last-good fallback), and gates on ≥4
 confident points. End-to-end on the held-out NBA test split:

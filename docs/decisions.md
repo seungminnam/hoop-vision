@@ -159,6 +159,22 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   (detector keypoints → RANSAC homography over planar points → smoothing), which
   must feed the model 640×640-stretched frames to match training, then map to
   feet (the homography absorbs the anisotropic stretch).
+- **Addendum (2026-07-10) — independently confirmed by the dataset authors.**
+  After deriving the template we found the dataset's authors (Roboflow / SkalskiP)
+  do publish an official NBA court config — in `roboflow/sports` on the
+  **`feat/basketball` branch** (`sports/basketball/config.py`), not on `main`
+  (soccer only), which is why the search at derivation time found nothing. Their
+  vertex order, labels ("01".."41"), basket indices (6/26) and corner indices
+  ([0,5,27,32]) match our schema exactly. Reproducing their centimeter presets and
+  comparing (`scripts/compare_court_template.py`) gives **mean 0.089 ft, 29/33
+  points within 0.1 ft** — our reverse-engineered identities are correct. The
+  only real disagreements: the four **sideline coaching-box hashes** (we place
+  them at 28 ft, they at 27.4 ft) and the **corner-3 straight elbows** (14.0 vs
+  13.91 ft). We keep our values: the label reprojection residual (median ~0.19 ft
+  at those hashes; a 0.6 ft error would show) and the NBA rulebook both put the
+  coaching-box hash at 28 ft, and 14 ft is the rulebook corner-3 length. This is
+  the strongest possible honesty-rule check short of an official template we could
+  have reused.
 
 ## ADR-006 — Per-frame registration runtime: smooth in image space, gate on confidence
 
@@ -193,3 +209,8 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   where few keypoints are visible (extrapolation) — stated plainly in the README
   and shown in `docs/court_registration_nba.gif`. Next (§4.3): feed these court
   coordinates into the existing shot-chart / stats pipeline (`court.to_court`).
+- **Note vs the reference pipeline.** The dataset authors' own notebook
+  (see ADR-005 addendum) re-fits an independent homography every frame with no
+  smoothing, no elevated-point exclusion, and no low-confidence fallback. The
+  `CourtRegistrar` (image-space EMA + planar-only fit + last-good gate) is our
+  differentiator over that baseline.

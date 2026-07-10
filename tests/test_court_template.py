@@ -86,3 +86,19 @@ def test_template_array_shapes():
     assert ct.template_array().shape == (33, 2)
     assert ct.template_array([0, 5, 27]).shape == (3, 2)
     np.testing.assert_allclose(ct.template_array([16])[0], [47.0, 25.0])
+
+
+def test_cross_validates_against_roboflow_official_config():
+    """Our derived template matches the dataset authors' published config."""
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "scripts"))
+    from compare_court_template import comparison  # noqa: E402
+
+    c = comparison()
+    # mean agreement across all 33 points is a couple of inches
+    assert c["mean_ft"] < 0.15
+    # only the 4 sideline hashes + 4 corner-3 elbows differ meaningfully;
+    # every other point is essentially identical (rounding only)
+    assert c["within_0_1_ft"] >= 29
