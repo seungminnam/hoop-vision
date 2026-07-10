@@ -259,6 +259,59 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   detection quality is unmeasured, so this slice ships movement stats + occupancy
   and leaves shot charts to a later PR after ball-coverage is measured.
 
+## ADR-009 — D-4: player identity by IoS match + temporal vote + non-overlap merge
+
+- **Date:** 2026-07-10 · **Status:** accepted (D-4)
+- **Context.** §4.3 (ADR-007) gives per-*track* court stats, but tracks are
+  anonymous and fragmented. D-2 (number detector, AP50 0.970) and D-3 (number
+  classifier, test acc 0.955) supply the pieces to name a track. D-4 wires them
+  into the §4.3 runner and merges fragments of the same player.
+- **Decision — three pure, unit-tested steps** (`src/hoopvision/identity.py`,
+  16 tests):
+  1. **Match** each number box to a player track by **Intersection over Smaller
+     area (IoS) ≥ 0.9**, not IoU: a number box is tiny and sits inside the player
+     box, so IoS ≈ 1 for the right pair while IoU stays near 0.
+  2. **Vote** over time — a track's number is confirmed only with **≥ 3 reads and
+     a ≥ 50% plurality**. Voting, not per-crop softmax confidence, is the noise
+     filter, because the classifier labels even unreadable crops confidently
+     (D-3 finding). Sparse/contradictory reads leave a track anonymous.
+  3. **Merge** same-number tracks **only when their frame ranges are disjoint**
+     (two concurrent tracks cannot be one player; an overlap means a misread, so
+     they stay separate). Union of disjoint fragments, canonical id = smallest.
+- **Coordinate handling.** Player detection + registration run on 640×640
+  stretched frames, but number boxes vanish there, so number detection runs on
+  the **native frame at imgsz=1280** and crops come from the native frame; the
+  native number box is scaled into 640 space to match track boxes for IoS
+  (`scripts/identify_players.py`).
+- **Options rejected.** (1) *IoU matching* — fails on the tiny-inside-large box
+  geometry. (2) *Per-crop confidence gate for "unknown"* — measured useless
+  against unreadable crops (D-3). (3) *Merge overlapping same-number tracks* —
+  would fuse two different players on a misread; rejected for the conservative
+  disjoint-range rule. (4) *Appearance stitching first* (stitch.py) — deferred:
+  it would lengthen tracks and lift the read rate, but it is a separate lever;
+  D-4 measures the number path alone first (below).
+- **Validation — the honest headline is the read rate** (`_nba_raw`, 30 s /
+  900 frames, reads every 5th frame). Reproduce: `scripts/identify_players.py`;
+  committed artifact `docs/player_identity_nba.json`.
+  - Plumbing works: 100% registered, **339 number reads**, 107 tracks → 98 after
+    merge, and named tracks carry realistic stats (e.g. #11: 107 ft over 374
+    frames, 5.6 mph avg).
+  - **But only ~9% of tracks get a confirmed number (8 of ~98)**, and one number
+    (#22) is confirmed on **four concurrent tracks** — which cannot be one
+    player. The read histogram exposes why: **"22" is read 113 of 339 times
+    (33%)**, i.e. the classifier collapses many small, motion-blurred in-game
+    numbers onto one class. So the bottleneck is **read *precision* on a 720p
+    panning broadcast**, not the matching/voting/merge logic — the classifier was
+    trained on curated close crops and over-commits on in-game ones.
+- **Consequences.** Ship the pipeline as a **hybrid**: per-*player* where a
+  number is confirmed, per-*track* otherwise — an honest, correct-by-construction
+  result, not a claim of full box scores. The meta block reports
+  `read_rate`, `number_read_histogram`, and `numbers_on_multiple_players` so the
+  limitation is visible in the artifact itself. Levers to raise the rate (future
+  work, not this slice): appearance stitching before reading, a stricter number
+  detector confidence, a higher vote threshold, or an "unreadable" class in the
+  classifier so it can abstain. Roster (number→name) mapping stays out of scope.
+
 ## ADR-008 — Unblock task D (jersey identity): adopt two NBA datasets, detect+classify
 
 - **Date:** 2026-07-10 · **Status:** accepted (D-1)

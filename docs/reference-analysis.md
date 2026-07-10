@@ -126,6 +126,16 @@ live risk is no longer data but resolution: number boxes are ~12–17 px even at
 native 720p, so detection runs at full res and read-rate on our panning clip is
 the honest unknown to measure.
 
+**Built + measured 2026-07-10 ([ADR-009](decisions.md)).** Detector `number`
+AP50 **0.970**, classifier acc **0.955** (release v0.5.0); the IoS-match / vote /
+merge logic is pure and unit-tested. The measured unknown came back as feared:
+on the 30 s panning clip **only ~9% of tracks get a confirmed number**, and the
+classifier collapses many blurry in-game numbers onto "22" (113/339 reads). So
+the resolution risk was real — read *precision*, not the plumbing, is the wall.
+Ships as a hybrid (per-player where read, per-track otherwise); R1-style
+per-named-player box scores need either higher-res close footage or the levers
+in ADR-009 (appearance stitching before reading, an abstain class).
+
 ### E. Not worth copying
 Ball interpolation (already have it) and basic KMeans teams (already have it).
 
