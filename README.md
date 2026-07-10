@@ -341,24 +341,33 @@ same-number tracks whose time ranges do not overlap — turning fragments of one
 player into a single identity ([ADR-009](docs/decisions.md)). The pure logic
 (match / vote / merge) is unit-tested (`tests/test_identity.py`).
 
-| identity on the 30 s panning clip | value |
-|---|---|
-| number reads | 339 over 180 sampled frames |
-| tracks (seen / after number-merge) | 107 / 98 |
-| tracks with a confirmed number | **8 (read rate ~9%)** |
+To fight the fragmentation that starves the per-track vote, tracks are
+**stitched in court space *before* reading** (`stitch.stitch_court`, [ADR-010](docs/decisions.md)):
+fragments of one player — disjoint in time, close in *feet*, similar torso
+colour — merge so their sparse reads pool. Because court coordinates are
+camera-invariant, the spatial gate is a physical speed bound, not image pixels
+(which drift under the pan). `--no-stitch` gives an honest baseline:
 
-The **honest headline is that read rate**: on a 720p panning broadcast only ~9%
-of tracks get a confirmed number, and one number (#22) is read 113 of 339 times
-and lands on four concurrent tracks — so the classifier, trained on curated
-close crops, over-commits on small motion-blurred in-game numbers. The
-bottleneck is read *precision*, not the matching/voting/merge logic (which is
-correct by construction and refuses to merge concurrent tracks). The pipeline
-therefore ships as a **hybrid**: per-*player* where a number is confirmed,
-per-*track* otherwise. The committed artifact `docs/player_identity_nba.json`
-carries `read_rate`, `number_read_histogram`, and `numbers_on_multiple_players`
-so the limitation is visible in the data itself. Levers to raise it (future
-work): appearance stitching before reading, a stricter detector gate, or an
-"unreadable" class so the classifier can abstain.
+| 30 s panning clip | stitch off | stitch on |
+|---|---|---|
+| tracks after stitch | 107 | **53** |
+| median votes per read track | 4 | **9** |
+| read rate (identified / player-tracks) | 0.075 | **0.113** |
+| distinct players named | ~5 | ~4 |
+
+The **honest headline is still read precision, not fragmentation**. Stitching
+works as designed — it halves fragmentation, doubles per-track votes, and makes
+a correctly-read player's movement stats more complete (#11: 374 → 502 frames).
+But it does **not** unlock more distinct identities: both runs are dominated by a
+bogus "#22" (the classifier reads 113 of 339 numbers as "22" and lands it on
+several concurrent tracks), because it was trained on curated close crops and
+over-commits on small motion-blurred in-game numbers. The match/vote/merge logic
+is correct by construction (it refuses to merge concurrent tracks). So the
+pipeline ships as a **hybrid**: per-*player* where a number is confirmed,
+per-*track* otherwise — with `docs/player_identity_nba.json` carrying
+`read_rate`, `number_read_histogram`, and `numbers_on_multiple_players` so the
+limit is visible in the data. The remaining lever is precision (a classifier
+abstain class / in-game-crop fine-tune), not the pipeline.
 
 ## Demo app
 

@@ -12,12 +12,18 @@ Coordinate handling (the crux): player detection + court registration run on a
 imgsz=1280 and crops come from the native frame too. Native number boxes are
 then scaled into 640 space to match track boxes for IoS.
 
+To fight track fragmentation (which starves the per-track vote), tracks are
+**stitched in court space before reading** (`stitch.stitch_court`): fragments of
+one player, disjoint in time and close in *feet* with a similar torso colour,
+merge into one track so their sparse reads pool and can clear the vote
+threshold. `--no-stitch` disables it for an honest before/after on the same clip.
+
 The honest headline is the **read rate**: how many tracks actually get a
 confirmed number on a 720p panning broadcast. It is reported, not hidden — a
 low rate still yields a valid hybrid (named where read, per-track otherwise).
 
     uv run python scripts/identify_players.py --start 2 --seconds 30 \
-        --json docs/player_identity_nba.json
+        --json docs/player_identity_nba.json          # --no-stitch for baseline
 
 Needs pose weights (release v0.4.0), the v1 player detector (v0.2.0), and the
 D-2 number detector + D-3 classifier (v0.5.0: number_detector.pt,
@@ -29,19 +35,35 @@ from __future__ import annotations
 import argparse
 import json
 from collections import Counter
+from dataclasses import dataclass
 from pathlib import Path
 
 import cv2
 import numpy as np
 
 from hoopvision.court_template import NUM_KEYPOINTS
-from hoopvision.identity import NumberRead, TrackBox, identify
+from hoopvision.identity import NumberRead, TrackBox, identify, match_reads_to_tracks
 from hoopvision.registration import CourtRegistrar, image_to_court
 from hoopvision.stats import PlayerStat, TrackPath, stats_from_paths
+from hoopvision.stitch import CourtTracklet, stitch_court
+from hoopvision.teams import color_histogram, torso_crop
 
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 640  # detector / registration input (matches 640-stretched training)
 BOUNDS_MARGIN = 2.0
+
+
+@dataclass
+class Collected:
+    """Everything one pass over the clip yields (collect() is called once)."""
+
+    paths: dict[int, TrackPath]
+    reads: list[NumberRead]
+    track_boxes: list[TrackBox]
+    spans: dict[int, tuple[int, int]]
+    tracklets: list[CourtTracklet]  # per-track court endpoints + appearance
+    fps: float
+    meta: dict
 
 
 def _best_keypoints(res, conf: float) -> dict[int, tuple[float, float]]:
@@ -119,6 +141,26 @@ class NumberReader:
         return [(box, self.classes[p]) for box, p in zip(native_boxes, pred, strict=True)]
 
 
+def _build_tracklets(
+    first_court: dict[int, tuple[int, tuple[float, float]]],
+    last_court: dict[int, tuple[int, tuple[float, float]]],
+    feats: dict[int, list[np.ndarray]],
+) -> list[CourtTracklet]:
+    """Per-track court endpoints + mean torso histogram → stitching tracklets."""
+    tracklets = []
+    for tid, (sf, sft) in first_court.items():
+        lf, lft = last_court[tid]
+        flist = feats.get(tid, [])
+        if flist:
+            mean = np.mean(flist, axis=0)
+            norm = float(np.linalg.norm(mean))
+            feature = (mean / norm).astype(np.float32) if norm > 0 else mean.astype(np.float32)
+        else:
+            feature = np.zeros(1, dtype=np.float32)
+        tracklets.append(CourtTracklet(tid, sf, lf, sft, lft, feature))
+    return tracklets
+
+
 def collect(
     video: str,
     pose_weights: str,
@@ -130,13 +172,7 @@ def collect(
     player_conf: float,
     number_conf: float,
     read_every: int,
-) -> tuple[
-    dict[int, TrackPath],
-    list[NumberRead],
-    list[TrackBox],
-    dict[int, tuple[int, int]],
-    dict,
-]:
+) -> Collected:
     from ultralytics import YOLO
 
     from hoopvision.detect import YoloDetector
@@ -156,6 +192,9 @@ def collect(
     track_boxes: list[TrackBox] = []
     spans: dict[int, tuple[int, int]] = {}
     reads: list[NumberRead] = []
+    feats: dict[int, list[np.ndarray]] = {}  # torso histograms per track (640 space)
+    first_court: dict[int, tuple[int, tuple[float, float]]] = {}
+    last_court: dict[int, tuple[int, tuple[float, float]]] = {}
     processed = registered = read_frames = 0
 
     for i in range(n_frames):
@@ -176,12 +215,17 @@ def collect(
             track_boxes.append(TrackBox(i, p.track_id, p.xyxy))  # 640-space
             lo, hi = spans.get(p.track_id, (i, i))
             spans[p.track_id] = (min(lo, i), max(hi, i))
+            crop = torso_crop(f640, p.xyxy)  # appearance for stitching
+            if crop is not None:
+                feats.setdefault(p.track_id, []).append(color_histogram(crop))
             if H is not None:
                 court = image_to_court(H, np.array([p.foot]))[0]
                 if _in_bounds(court):
-                    paths.setdefault(p.track_id, []).append(
-                        (t, (float(court[0]), float(court[1])), p.team)
-                    )
+                    ft = (float(court[0]), float(court[1]))
+                    paths.setdefault(p.track_id, []).append((t, ft, p.team))
+                    if p.track_id not in first_court:
+                        first_court[p.track_id] = (i, ft)
+                    last_court[p.track_id] = (i, ft)
         if H is not None:
             registered += 1
 
@@ -204,7 +248,8 @@ def collect(
         "number_reads": len(reads),
         "tracks_seen": len(spans),
     }
-    return paths, reads, track_boxes, spans, meta
+    tracklets = _build_tracklets(first_court, last_court, feats)
+    return Collected(paths, reads, track_boxes, spans, tracklets, fps, meta)
 
 
 def apply_remap(paths: dict[int, TrackPath], remap: dict[int, int]) -> dict[int, TrackPath]:
@@ -214,6 +259,23 @@ def apply_remap(paths: dict[int, TrackPath], remap: dict[int, int]) -> dict[int,
     for obs in merged.values():
         obs.sort(key=lambda o: o[0])
     return merged
+
+
+def _remap_spans(
+    spans: dict[int, tuple[int, int]], remap: dict[int, int]
+) -> dict[int, tuple[int, int]]:
+    out: dict[int, tuple[int, int]] = {}
+    for tid, (lo, hi) in spans.items():
+        c = remap.get(tid, tid)
+        if c in out:
+            out[c] = (min(out[c][0], lo), max(out[c][1], hi))
+        else:
+            out[c] = (lo, hi)
+    return out
+
+
+def _remap_boxes(track_boxes: list[TrackBox], remap: dict[int, int]) -> list[TrackBox]:
+    return [TrackBox(tb.frame, remap.get(tb.track_id, tb.track_id), tb.xyxy) for tb in track_boxes]
 
 
 def main() -> None:
@@ -235,6 +297,12 @@ def main() -> None:
     p.add_argument("--read-every", type=int, default=5, help="frames between number reads")
     p.add_argument("--min-frames", type=int, default=15)
     p.add_argument("--min-votes", type=int, default=3)
+    p.add_argument(
+        "--stitch",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="court-space appearance stitching before reading (--no-stitch to disable)",
+    )
     p.add_argument("--json", default=None)
     args = p.parse_args()
 
@@ -243,7 +311,7 @@ def main() -> None:
     device = default_device()
     reader = NumberReader(args.number_weights, args.classifier_weights, device)
 
-    paths, reads, track_boxes, spans, meta = collect(
+    got = collect(
         args.video,
         args.pose_weights,
         args.player_weights,
@@ -255,15 +323,42 @@ def main() -> None:
         args.number_conf,
         args.read_every,
     )
+    paths, reads, track_boxes, spans, meta = (
+        got.paths,
+        got.reads,
+        got.track_boxes,
+        got.spans,
+        got.meta,
+    )
 
-    remap, numbers = identify(reads, track_boxes, spans, min_ios=0.9, min_votes=args.min_votes)
-    merged_paths = apply_remap(paths, remap)
+    # Stage 1: stitch fragmented tracks in court space (appearance + speed gate)
+    # BEFORE reading, so a player's sparse reads pool onto one track and can
+    # clear the vote threshold. Stage 2: the number match/vote/merge runs on the
+    # stitched tracks.
+    stitch_remap = stitch_court(got.tracklets, got.fps) if args.stitch else {}
+    boxes_s = _remap_boxes(track_boxes, stitch_remap)
+    spans_s = _remap_spans(spans, stitch_remap)
+    paths_s = apply_remap(paths, stitch_remap)
+
+    num_remap, numbers = identify(reads, boxes_s, spans_s, min_ios=0.9, min_votes=args.min_votes)
+    merged_paths = apply_remap(paths_s, num_remap)
     stats: list[PlayerStat] = stats_from_paths(merged_paths, min_frames=args.min_frames)
 
-    identified = {tid for tid, canon in remap.items() if canon in numbers}
+    meta["stitching"] = "on" if args.stitch else "off"
+    meta["tracks_after_stitch"] = len(spans_s)
     meta["tracks_after_merge"] = len(merged_paths)
     meta["tracks_identified"] = len(numbers)
-    meta["read_rate"] = round(len(identified) / max(len(spans), 1), 3)
+    # read rate = identified players / player-tracks after stitch (same metric
+    # for --stitch and --no-stitch, so the two runs compare directly).
+    meta["read_rate"] = round(len(numbers) / max(len(spans_s), 1), 3)
+
+    # Did stitching actually thicken per-track reads? Report the vote counts on
+    # the (stitched) tracks that received any number read.
+    votes = match_reads_to_tracks(reads, boxes_s)
+    vote_counts = sorted((len(v) for v in votes.values()), reverse=True)
+    meta["tracks_with_any_read"] = len(vote_counts)
+    meta["max_votes_on_a_track"] = vote_counts[0] if vote_counts else 0
+    meta["median_votes_among_read_tracks"] = float(np.median(vote_counts)) if vote_counts else 0.0
 
     # Honesty telemetry: what the classifier actually read, and whether a number
     # got confirmed on two players at once (concurrent same-number tracks can't

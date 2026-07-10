@@ -350,3 +350,51 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   maps to "unknown" (abstains from voting). `referee` is a bonus class v1 lacks
   (can exclude refs from player stats). Roster (number→name) mapping is out of
   scope — "player #12" is the target.
+
+## ADR-010 — Court-space track stitching before number reading (task E)
+
+- **Date:** 2026-07-11 · **Status:** accepted (E-1)
+- **Context.** ADR-009 measured a ~9% read rate and named it the D-4 headline.
+  Two causes: (1) **fragmentation** — ByteTrack splinters ~10 players into 107
+  tracks, so per-track reads are too sparse to clear the vote; (2) **read
+  precision** — the classifier collapses blurry in-game numbers onto "22". This
+  slice attacks (1): stitch fragments into longer tracks *before* voting so a
+  player's reads pool.
+- **Decision — stitch in court feet, not image pixels.** `stitch.stitch_court`
+  reuses the union-find of the v1.1 image-space `stitch()` but replaces the
+  spatial gate: instead of "reappears within N box-heights of pixels", it is
+  "reappears within `base_ft + max_speed_fps × gap_s` **court feet**". Runs in
+  `identify_players.py` before `identify()`; `--no-stitch` gives an honest
+  baseline on the same clip.
+- **Options rejected.** *Reuse image-space `stitch()` as-is* — its pixel gate is
+  meaningless under a panning camera (the same player reappears at an arbitrary
+  pixel). Court coordinates are camera-invariant (ADR-007), so the physical
+  speed bound is the correct frame — the same "registration is the motion
+  compensation" idea, now applied to fragmentation. *Fold stitching into the
+  in-frame tracker* — out of scope; the offline post-process is enough here.
+- **Validation — `_nba_raw` (30 s), stitch off vs on** (reproduce:
+  `identify_players.py --no-stitch` / `--stitch`):
+
+  | metric | off | on |
+  |---|---|---|
+  | tracks after stitch | 107 | **53** |
+  | median votes among read tracks | 4 | **9** |
+  | read rate (identified / player-tracks) | 0.075 | **0.113** |
+  | tracks identified | 8 | 6 |
+  | `numbers_on_multiple_players` | `{22: 4}` | `{22: 3}` |
+
+- **The honest read — a partial win with a clear ceiling.** The mechanism works:
+  fragmentation halves (107 → 53) and per-track votes double (median 4 → 9), so
+  reads pool exactly as intended, and a *correctly* read player's stats get more
+  complete (#11: 374 → 502 frames, 107 → 140 ft). **But it does not unlock new
+  distinct players**: both runs are dominated by the bogus "22" (still on 3
+  concurrent tracks), and the distinct-number count barely moves. Stitching
+  cannot fix a classifier that mislabels — **read *precision*, not fragmentation,
+  is now the binding constraint** (sharpening ADR-009). `tracks_identified` even
+  dips 8 → 6 as a short 80-frame "10" fragment falls below `min_frames` after the
+  cleaner consolidation.
+- **Decision on default.** Keep stitching **on**: it makes the *movement* stats
+  per-player rather than per-fragment (the headline §4.3 product) and lifts the
+  read rate, at no cost but the honest fact that it can't manufacture identities
+  the classifier can't read. Raising precision is the separate backlog lever
+  (classifier abstain class / in-game-crop fine-tune), not this slice.

@@ -12,9 +12,14 @@
     "read_every": 5,
     "number_reads": 339,
     "tracks_seen": 107,
-    "tracks_after_merge": 98,
-    "tracks_identified": 8,
-    "read_rate": 0.093,
+    "stitching": "on",
+    "tracks_after_stitch": 53,
+    "tracks_after_merge": 44,
+    "tracks_identified": 6,
+    "read_rate": 0.113,
+    "tracks_with_any_read": 22,
+    "max_votes_on_a_track": 46,
+    "median_votes_among_read_tracks": 9.0,
     "number_read_histogram": {
       "22": 113,
       "30": 50,
@@ -40,178 +45,168 @@
       "8": 1
     },
     "numbers_on_multiple_players": {
-      "22": 4
+      "22": 3
     }
   },
   "players": [
     {
+      "track_id": 5,
+      "team": null,
+      "frames": 698,
+      "seconds": 30.0,
+      "distance_ft": 234.6,
+      "avg_speed_mph": 5.3,
+      "top_speed_mph": 16.8,
+      "number": "22"
+    },
+    {
       "track_id": 12,
       "team": null,
-      "frames": 639,
-      "seconds": 23.1,
-      "distance_ft": 202.6,
-      "avg_speed_mph": 6.0,
+      "frames": 697,
+      "seconds": 26.4,
+      "distance_ft": 222.2,
+      "avg_speed_mph": 5.7,
       "top_speed_mph": 16.7,
       "number": null
     },
     {
       "track_id": 3,
       "team": null,
-      "frames": 604,
+      "frames": 674,
       "seconds": 27.8,
-      "distance_ft": 175.8,
-      "avg_speed_mph": 4.3,
-      "top_speed_mph": 16.1,
+      "distance_ft": 208.3,
+      "avg_speed_mph": 5.1,
+      "top_speed_mph": 16.7,
       "number": "22"
     },
     {
-      "track_id": 50,
+      "track_id": 35,
       "team": null,
-      "frames": 473,
-      "seconds": 16.2,
-      "distance_ft": 151.9,
-      "avg_speed_mph": 6.4,
-      "top_speed_mph": 18.3,
-      "number": null
-    },
-    {
-      "track_id": 7,
-      "team": null,
-      "frames": 513,
-      "seconds": 30.0,
-      "distance_ft": 132.0,
-      "avg_speed_mph": 3.0,
-      "top_speed_mph": 15.5,
-      "number": "22"
-    },
-    {
-      "track_id": 1,
-      "team": null,
-      "frames": 374,
-      "seconds": 13.0,
-      "distance_ft": 107.2,
-      "avg_speed_mph": 5.6,
-      "top_speed_mph": 13.6,
-      "number": "11"
-    },
-    {
-      "track_id": 41,
-      "team": null,
-      "frames": 287,
-      "seconds": 10.3,
-      "distance_ft": 98.8,
-      "avg_speed_mph": 6.6,
-      "top_speed_mph": 17.7,
-      "number": "22"
-    },
-    {
-      "track_id": 49,
-      "team": null,
-      "frames": 276,
-      "seconds": 9.3,
-      "distance_ft": 96.3,
-      "avg_speed_mph": 7.1,
-      "top_speed_mph": 17.8,
-      "number": "22"
-    },
-    {
-      "track_id": 58,
-      "team": null,
-      "frames": 116,
-      "seconds": 5.3,
-      "distance_ft": 75.5,
-      "avg_speed_mph": 9.8,
-      "top_speed_mph": 20.7,
-      "number": null
-    },
-    {
-      "track_id": 64,
-      "team": null,
-      "frames": 147,
-      "seconds": 5.8,
-      "distance_ft": 70.3,
-      "avg_speed_mph": 8.3,
-      "top_speed_mph": 19.1,
-      "number": null
-    },
-    {
-      "track_id": 5,
-      "team": null,
-      "frames": 310,
-      "seconds": 11.5,
-      "distance_ft": 70.0,
-      "avg_speed_mph": 4.2,
-      "top_speed_mph": 13.0,
-      "number": null
-    },
-    {
-      "track_id": 22,
-      "team": null,
-      "frames": 197,
-      "seconds": 7.7,
-      "distance_ft": 67.9,
+      "frames": 553,
+      "seconds": 20.0,
+      "distance_ft": 175.7,
       "avg_speed_mph": 6.0,
-      "top_speed_mph": 13.7,
+      "top_speed_mph": 18.0,
       "number": null
     },
     {
       "track_id": 9,
       "team": null,
-      "frames": 302,
-      "seconds": 11.8,
-      "distance_ft": 62.5,
-      "avg_speed_mph": 3.6,
-      "top_speed_mph": 10.2,
+      "frames": 589,
+      "seconds": 22.1,
+      "distance_ft": 162.3,
+      "avg_speed_mph": 5.0,
+      "top_speed_mph": 15.3,
+      "number": "22"
+    },
+    {
+      "track_id": 37,
+      "team": null,
+      "frames": 282,
+      "seconds": 14.7,
+      "distance_ft": 140.9,
+      "avg_speed_mph": 6.5,
+      "top_speed_mph": 19.4,
+      "number": null
+    },
+    {
+      "track_id": 1,
+      "team": null,
+      "frames": 502,
+      "seconds": 18.9,
+      "distance_ft": 139.9,
+      "avg_speed_mph": 5.0,
+      "top_speed_mph": 13.5,
+      "number": "11"
+    },
+    {
+      "track_id": 64,
+      "team": null,
+      "frames": 235,
+      "seconds": 12.3,
+      "distance_ft": 128.3,
+      "avg_speed_mph": 7.1,
+      "top_speed_mph": 19.6,
+      "number": null
+    },
+    {
+      "track_id": 4,
+      "team": null,
+      "frames": 377,
+      "seconds": 15.5,
+      "distance_ft": 116.8,
+      "avg_speed_mph": 5.1,
+      "top_speed_mph": 14.0,
+      "number": null
+    },
+    {
+      "track_id": 7,
+      "team": null,
+      "frames": 508,
+      "seconds": 24.9,
+      "distance_ft": 113.0,
+      "avg_speed_mph": 3.1,
+      "top_speed_mph": 11.3,
       "number": null
     },
     {
       "track_id": 65,
       "team": null,
-      "frames": 106,
-      "seconds": 4.2,
-      "distance_ft": 60.0,
-      "avg_speed_mph": 9.7,
-      "top_speed_mph": 19.2,
+      "frames": 255,
+      "seconds": 11.7,
+      "distance_ft": 112.0,
+      "avg_speed_mph": 6.5,
+      "top_speed_mph": 19.5,
+      "number": null
+    },
+    {
+      "track_id": 63,
+      "team": null,
+      "frames": 237,
+      "seconds": 12.2,
+      "distance_ft": 97.6,
+      "avg_speed_mph": 5.5,
+      "top_speed_mph": 19.5,
       "number": null
     },
     {
       "track_id": 2,
       "team": null,
-      "frames": 233,
-      "seconds": 8.2,
-      "distance_ft": 58.9,
-      "avg_speed_mph": 4.9,
-      "top_speed_mph": 12.9,
-      "number": null
-    },
-    {
-      "track_id": 70,
-      "team": null,
-      "frames": 69,
-      "seconds": 3.1,
-      "distance_ft": 45.0,
-      "avg_speed_mph": 9.9,
-      "top_speed_mph": 18.9,
+      "frames": 259,
+      "seconds": 14.9,
+      "distance_ft": 91.0,
+      "avg_speed_mph": 4.2,
+      "top_speed_mph": 14.0,
       "number": null
     },
     {
       "track_id": 6,
       "team": null,
-      "frames": 178,
-      "seconds": 6.1,
-      "distance_ft": 41.8,
-      "avg_speed_mph": 4.7,
+      "frames": 182,
+      "seconds": 7.5,
+      "distance_ft": 46.7,
+      "avg_speed_mph": 4.3,
       "top_speed_mph": 15.7,
       "number": "30"
     },
     {
-      "track_id": 87,
+      "track_id": 90,
       "team": null,
-      "frames": 91,
-      "seconds": 3.2,
-      "distance_ft": 38.8,
-      "avg_speed_mph": 8.3,
-      "top_speed_mph": 20.3,
+      "frames": 60,
+      "seconds": 3.3,
+      "distance_ft": 38.5,
+      "avg_speed_mph": 8.0,
+      "top_speed_mph": 19.3,
+      "number": null
+    },
+    {
+      "track_id": 11,
+      "team": null,
+      "frames": 92,
+      "seconds": 4.5,
+      "distance_ft": 35.7,
+      "avg_speed_mph": 5.4,
+      "top_speed_mph": 13.7,
       "number": null
     },
     {
@@ -225,103 +220,33 @@
       "number": null
     },
     {
-      "track_id": 74,
+      "track_id": 38,
       "team": null,
-      "frames": 98,
-      "seconds": 3.6,
+      "frames": 96,
+      "seconds": 8.7,
       "distance_ft": 35.4,
-      "avg_speed_mph": 6.8,
-      "top_speed_mph": 16.8,
-      "number": null
-    },
-    {
-      "track_id": 37,
-      "team": null,
-      "frames": 85,
-      "seconds": 4.0,
-      "distance_ft": 34.6,
-      "avg_speed_mph": 5.9,
+      "avg_speed_mph": 2.8,
       "top_speed_mph": 18.4,
       "number": null
     },
     {
-      "track_id": 97,
+      "track_id": 92,
       "team": null,
-      "frames": 55,
-      "seconds": 2.0,
-      "distance_ft": 34.6,
-      "avg_speed_mph": 11.8,
-      "top_speed_mph": 19.3,
+      "frames": 78,
+      "seconds": 3.2,
+      "distance_ft": 31.7,
+      "avg_speed_mph": 6.8,
+      "top_speed_mph": 18.6,
       "number": null
     },
     {
-      "track_id": 51,
+      "track_id": 91,
       "team": null,
-      "frames": 128,
-      "seconds": 5.1,
-      "distance_ft": 32.1,
+      "frames": 83,
+      "seconds": 3.2,
+      "distance_ft": 20.3,
       "avg_speed_mph": 4.3,
-      "top_speed_mph": 12.9,
-      "number": null
-    },
-    {
-      "track_id": 96,
-      "team": null,
-      "frames": 77,
-      "seconds": 2.7,
-      "distance_ft": 29.6,
-      "avg_speed_mph": 7.5,
-      "top_speed_mph": 18.7,
-      "number": null
-    },
-    {
-      "track_id": 77,
-      "team": null,
-      "frames": 113,
-      "seconds": 4.5,
-      "distance_ft": 28.0,
-      "avg_speed_mph": 4.2,
-      "top_speed_mph": 18.5,
-      "number": null
-    },
-    {
-      "track_id": 17,
-      "team": null,
-      "frames": 74,
-      "seconds": 2.5,
-      "distance_ft": 26.3,
-      "avg_speed_mph": 7.1,
-      "top_speed_mph": 13.6,
-      "number": null
-    },
-    {
-      "track_id": 59,
-      "team": null,
-      "frames": 47,
-      "seconds": 3.0,
-      "distance_ft": 24.6,
-      "avg_speed_mph": 5.6,
-      "top_speed_mph": 20.8,
-      "number": null
-    },
-    {
-      "track_id": 35,
-      "team": null,
-      "frames": 80,
-      "seconds": 2.9,
-      "distance_ft": 23.9,
-      "avg_speed_mph": 5.6,
-      "top_speed_mph": 13.3,
-      "number": "10"
-    },
-    {
-      "track_id": 76,
-      "team": null,
-      "frames": 77,
-      "seconds": 2.7,
-      "distance_ft": 22.2,
-      "avg_speed_mph": 5.5,
-      "top_speed_mph": 14.9,
+      "top_speed_mph": 20.4,
       "number": null
     },
     {
@@ -335,33 +260,13 @@
       "number": "0"
     },
     {
-      "track_id": 100,
+      "track_id": 23,
       "team": null,
-      "frames": 36,
-      "seconds": 1.2,
-      "distance_ft": 19.4,
-      "avg_speed_mph": 11.1,
-      "top_speed_mph": 20.2,
-      "number": null
-    },
-    {
-      "track_id": 81,
-      "team": null,
-      "frames": 50,
-      "seconds": 1.7,
-      "distance_ft": 17.7,
-      "avg_speed_mph": 7.0,
-      "top_speed_mph": 16.4,
-      "number": null
-    },
-    {
-      "track_id": 101,
-      "team": null,
-      "frames": 32,
-      "seconds": 1.1,
+      "frames": 79,
+      "seconds": 6.2,
       "distance_ft": 17.6,
-      "avg_speed_mph": 11.3,
-      "top_speed_mph": 19.9,
+      "avg_speed_mph": 2.0,
+      "top_speed_mph": 12.8,
       "number": null
     },
     {
@@ -385,16 +290,6 @@
       "number": null
     },
     {
-      "track_id": 47,
-      "team": null,
-      "frames": 38,
-      "seconds": 2.0,
-      "distance_ft": 16.0,
-      "avg_speed_mph": 5.6,
-      "top_speed_mph": 17.0,
-      "number": null
-    },
-    {
       "track_id": 80,
       "team": null,
       "frames": 39,
@@ -405,103 +300,23 @@
       "number": null
     },
     {
-      "track_id": 4,
+      "track_id": 10,
       "team": null,
-      "frames": 100,
-      "seconds": 3.3,
-      "distance_ft": 14.8,
-      "avg_speed_mph": 3.1,
-      "top_speed_mph": 8.5,
+      "frames": 15,
+      "seconds": 3.4,
+      "distance_ft": 5.4,
+      "avg_speed_mph": 1.1,
+      "top_speed_mph": 8.7,
       "number": null
     },
     {
-      "track_id": 79,
+      "track_id": 16,
       "team": null,
-      "frames": 29,
-      "seconds": 1.4,
-      "distance_ft": 12.5,
-      "avg_speed_mph": 5.9,
-      "top_speed_mph": 15.8,
-      "number": null
-    },
-    {
-      "track_id": 73,
-      "team": null,
-      "frames": 73,
-      "seconds": 2.4,
-      "distance_ft": 10.7,
-      "avg_speed_mph": 3.0,
-      "top_speed_mph": 5.8,
-      "number": null
-    },
-    {
-      "track_id": 93,
-      "team": null,
-      "frames": 27,
-      "seconds": 1.2,
-      "distance_ft": 10.2,
-      "avg_speed_mph": 5.8,
-      "top_speed_mph": 16.3,
-      "number": null
-    },
-    {
-      "track_id": 32,
-      "team": null,
-      "frames": 42,
-      "seconds": 2.3,
-      "distance_ft": 9.6,
-      "avg_speed_mph": 2.9,
-      "top_speed_mph": 12.9,
-      "number": null
-    },
-    {
-      "track_id": 18,
-      "team": null,
-      "frames": 42,
-      "seconds": 1.6,
-      "distance_ft": 9.1,
-      "avg_speed_mph": 4.0,
-      "top_speed_mph": 13.3,
-      "number": null
-    },
-    {
-      "track_id": 69,
-      "team": null,
-      "frames": 16,
-      "seconds": 0.6,
-      "distance_ft": 7.2,
-      "avg_speed_mph": 7.7,
-      "top_speed_mph": 16.8,
-      "number": null
-    },
-    {
-      "track_id": 91,
-      "team": null,
-      "frames": 42,
-      "seconds": 1.5,
-      "distance_ft": 6.6,
-      "avg_speed_mph": 3.0,
-      "top_speed_mph": 20.2,
-      "number": null
-    },
-    {
-      "track_id": 103,
-      "team": null,
-      "frames": 32,
-      "seconds": 1.0,
-      "distance_ft": 6.4,
-      "avg_speed_mph": 4.2,
-      "top_speed_mph": 8.6,
-      "number": null
-    },
-    {
-      "track_id": 45,
-      "team": null,
-      "frames": 45,
-      "seconds": 2.1,
-      "distance_ft": 5.3,
-      "avg_speed_mph": 1.7,
-      "top_speed_mph": 4.2,
+      "frames": 19,
+      "seconds": 2.2,
+      "distance_ft": 5.0,
+      "avg_speed_mph": 1.5,
+      "top_speed_mph": 10.5,
       "number": null
     },
     {
@@ -512,16 +327,6 @@
       "distance_ft": 4.3,
       "avg_speed_mph": 3.0,
       "top_speed_mph": 11.6,
-      "number": null
-    },
-    {
-      "track_id": 26,
-      "team": null,
-      "frames": 36,
-      "seconds": 1.2,
-      "distance_ft": 3.8,
-      "avg_speed_mph": 2.2,
-      "top_speed_mph": 4.4,
       "number": null
     }
   ]
