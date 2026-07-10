@@ -112,11 +112,19 @@ feasibility by cropping jersey regions from both sources:
 - **The 1080p pickup footage has no numbers at all** (plain athletic tanks /
   t-shirts) — OCR is moot there.
 
-So per-player identity is **not achievable from the current clips**; it needs
+So per-player identity was **not achievable from the current clips**; it needs
 footage that is *both* numbered *and* ≥720p (a broadcast or a higher-res HS
 recording). Not worth adding a heavy OCR dependency to chase ~0% recall.
-Documented as a data constraint, not attempted. Revisit if such footage is
-sourced. Depends on A/B *and* better data.
+Documented as a data constraint, not attempted. Depends on A/B *and* better data.
+
+**Unblocked 2026-07-10 ([ADR-008](decisions.md)).** The exact "numbered + ≥720p"
+footage now exists as public data: the dataset authors (ADR-005) publish
+`basketball-jersey-numbers-ocr` (3,188 NBA-broadcast number crops → digit
+strings) and `basketball-player-detection-3-ycjdo` (a `number` detection class).
+Task D resumes as detect-number → crop → classify → vote → merge tracks. The
+live risk is no longer data but resolution: number boxes are ~12–17 px even at
+native 720p, so detection runs at full res and read-rate on our panning clip is
+the honest unknown to measure.
 
 ### E. Not worth copying
 Ball interpolation (already have it) and basic KMeans teams (already have it).
