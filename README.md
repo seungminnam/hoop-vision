@@ -325,9 +325,40 @@ Grizzlies–Magic clip (30 s, 900 frames):
 
 Stats are **per track, not per player** — 30 s of panning + occlusion fragments
 the ~10 on-court players into ~50 tracks, so distances are per-fragment lower
-bounds; naming players needs jersey OCR (shelved task D). Shot events are
+bounds; naming players needs jersey OCR (task D, below). Shot events are
 deferred until 720p ball/rim coverage is measured. Numbers reproduce via
 `scripts/registered_stats.py` ([ADR-007](docs/decisions.md)).
+
+**§4.4 / task D — reading jersey numbers for per-player identity (done, with an
+honest limit).** Two models trained on public NBA-broadcast data
+([release v0.5.0](https://github.com/seungminnam/hoop-vision/releases/tag/v0.5.0)):
+a **number detector** (YOLO11n at imgsz=1280, held-out `number` AP50 **0.970**)
+and a **number classifier** (resnet18, 40-way, held-out acc **0.955**).
+`scripts/identify_players.py` reads a number every 5th frame at native
+resolution, matches it to a player track by Intersection-over-Smaller-area
+(≥ 0.9), confirms a number by temporal vote (≥ 3 reads, majority), and merges
+same-number tracks whose time ranges do not overlap — turning fragments of one
+player into a single identity ([ADR-009](docs/decisions.md)). The pure logic
+(match / vote / merge) is unit-tested (`tests/test_identity.py`).
+
+| identity on the 30 s panning clip | value |
+|---|---|
+| number reads | 339 over 180 sampled frames |
+| tracks (seen / after number-merge) | 107 / 98 |
+| tracks with a confirmed number | **8 (read rate ~9%)** |
+
+The **honest headline is that read rate**: on a 720p panning broadcast only ~9%
+of tracks get a confirmed number, and one number (#22) is read 113 of 339 times
+and lands on four concurrent tracks — so the classifier, trained on curated
+close crops, over-commits on small motion-blurred in-game numbers. The
+bottleneck is read *precision*, not the matching/voting/merge logic (which is
+correct by construction and refuses to merge concurrent tracks). The pipeline
+therefore ships as a **hybrid**: per-*player* where a number is confirmed,
+per-*track* otherwise. The committed artifact `docs/player_identity_nba.json`
+carries `read_rate`, `number_read_histogram`, and `numbers_on_multiple_players`
+so the limitation is visible in the data itself. Levers to raise it (future
+work): appearance stitching before reading, a stricter detector gate, or an
+"unreadable" class so the classifier can abstain.
 
 ## Demo app
 

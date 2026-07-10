@@ -53,7 +53,7 @@ samples, especially `hudl_seg1`):
 | Phase | Theme | One-line goal | Status |
 |---|---|---|---|
 | v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ◐ measurement harness done; labels + fixes next |
-| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ §4.2 done (detector 0.985 mAP; template 0.17 ft; registration 0.57 ft); §4.3 registered player stats done (100% on panning clip); shot charts + app integration remain |
+| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ §4.2 done (detector 0.985 mAP; template 0.17 ft; registration 0.57 ft); §4.3 registered player stats done (100% on panning clip); §4.4 jersey identity done (detector 0.970 / classifier 0.955; ~9% read rate — honest limit); shot charts + app integration remain |
 | v3 | Product: "Hudl-lite" | Auto game report for amateur teams (stats, shot charts, highlights) on the free stack | ☐ not started |
 
 ## 2. Working agreements (unchanged from v1 — do not relax)
@@ -266,10 +266,30 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
 - **Honest limits:** stats are per *track* not per player (panning + occlusion
   fragments ~10 players into ~50 tracks; no stitching applied), and **shot
   events are deferred** until 720p ball/rim coverage is measured. Naming players
-  needs jersey OCR (shelved task D — the `basketball-jersey-numbers-ocr` dataset
-  could revive it).
+  is task D (§4.4).
 - Remaining (later): fold `auto` registration into `pipeline.py` / the Streamlit
   app; shot charts once ball coverage justifies them.
+
+### 4.4 Player identity (task D) — jersey-number reading
+
+- ✅ **Detector + classifier done** ([release v0.5.0](https://github.com/seungminnam/hoop-vision/releases/tag/v0.5.0),
+  [ADR-008](docs/decisions.md)): D-2 number detector (YOLO11n @ imgsz=1280,
+  held-out `number` AP50 **0.970**, PR #31); D-3 number classifier (resnet18,
+  40-way, held-out acc **0.955**, PR #32). D-3 finding: softmax confidence does
+  not separate unreadable crops, so identity gates on temporal voting.
+- ✅ **Integration done ([ADR-009](docs/decisions.md)).** `src/hoopvision/identity.py`
+  (pure, 16 tests): IoS ≥ 0.9 number↔track match → temporal vote (≥3, majority)
+  → merge same-number non-overlapping tracks. `scripts/identify_players.py` runs
+  it on the panning clip (number detection at native res, matched in 640 space).
+- **Honest result (the point of the slice):** on `_nba_raw` (30 s), 339 reads,
+  107 → 98 tracks, but **only ~9% of tracks get a confirmed number** and "22" is
+  read 113/339 times across four concurrent tracks — so **read *precision* on a
+  720p panning broadcast is the bottleneck**, not the match/vote/merge logic.
+  Ships as a hybrid (per-player where read, per-track otherwise);
+  `docs/player_identity_nba.json` exposes `read_rate` etc. Levers to raise it:
+  appearance stitching before reading, stricter detector gate, an abstain class.
+- **Accept:** ✅ pure logic unit-tested; per-player stats + honest read rate on
+  `_nba_raw`; weights released; ADR-009 + README/ROADMAP updated.
 
 **Deliverables:** dataset builder, keypoint trainer/eval, smoothed runtime,
 new demo sample, README section with metrics.
@@ -300,14 +320,15 @@ prediction).
      Remaining slice-1 polish: made/missed timeline, downloadable report bundle.
 2. **Auto-highlights.** Cut ±N seconds around each shot event with ffmpeg,
    stitch a highlight reel; "made shots only" toggle. Cheap, high demo value.
-3. ◐ **Per-player identity (jersey OCR) — unblocked, in progress.** Was blocked
-   by data 2026-07-08 (our footage was 360p or numberless). **Unblocked
-   2026-07-10 ([ADR-008](docs/decisions.md))** by two public NBA-broadcast
-   datasets (`basketball-jersey-numbers-ocr` 3,188 crops → digits;
-   `basketball-player-detection-3-ycjdo` with a `number` class). Plan: detect
-   number → crop → classify → vote → merge tracks, upgrading §4.3's per-track
-   stats to per-player. Live risk is resolution (number boxes ~12–17 px), not
-   data (see docs/reference-analysis.md §D).
+3. ✅ **Per-player identity (jersey OCR) — done, with an honest limit** (§4.4,
+   [ADR-009](docs/decisions.md)). Was blocked by data 2026-07-08, unblocked
+   2026-07-10 by two public NBA-broadcast datasets. Built detect → classify →
+   vote → merge; detector `number` AP50 0.970, classifier acc 0.955. **Measured
+   read rate on the 720p panning clip is only ~9%** (read *precision* is the
+   bottleneck, as the resolution risk predicted), so it ships as a hybrid
+   (per-player where read, per-track otherwise) — an honest result, not a full
+   box score. Raising the rate is future work (appearance stitching / abstain
+   class).
 4. **Batch/local runner.** CLI to process a full game and emit the report;
    the hosted app stays precomputed-samples-only (free-tier limits — same
    split as v1).
