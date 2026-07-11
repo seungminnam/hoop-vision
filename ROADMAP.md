@@ -267,8 +267,13 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   fragments ~10 players into ~50 tracks; no stitching applied), and **shot
   events are deferred** until 720p ball/rim coverage is measured. Naming players
   is task D (§4.4).
-- Remaining (later): fold `auto` registration into `pipeline.py` / the Streamlit
-  app; shot charts once ball coverage justifies them.
+- ✅ **Exposed in the deployed demo (task F, [ADR-011](docs/decisions.md)).** The
+  Streamlit app now ships an `nba_broadcast` sample (built by
+  `scripts/build_nba_sample.py`) and opens on it: registration GIF + minimap, the
+  registered/identity stats with a jersey-number column, and the honest ~11%
+  read-rate stated in the open. App imports stay streamlit-only (deploy-safe).
+- Remaining (later, backlog): fold `auto` registration into `pipeline.py` (the
+  local "run on my clip" path); shot charts once ball coverage justifies them.
 
 ### 4.4 Player identity (task D) — jersey-number reading
 

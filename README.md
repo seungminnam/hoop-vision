@@ -375,7 +375,12 @@ abstain class / in-game-crop fine-tune), not the pipeline.
 
 The Streamlit app explores precomputed sample results (annotated video,
 minimap, shot chart, **player movement stats + occupancy heatmap**, events)
-and can run the full pipeline locally on an uploaded clip.
+and can run the full pipeline locally on an uploaded clip. It opens on the
+**`nba_broadcast`** sample — the v2 story on a *panning* broadcast: the court
+model registered onto the moving floor (100% of frames), full-court-feet player
+stats, and jersey-number **hybrid identity** with its honest ~11% read rate
+shown as-is ([ADR-011](docs/decisions.md); build the sample with
+`scripts/build_nba_sample.py`).
 
 Deployed on **Streamlit Community Cloud (free)**: repo
 `seungminnam/hoop-vision`, branch `main`, entrypoint `app/streamlit_app.py`.

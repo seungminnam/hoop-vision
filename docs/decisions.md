@@ -398,3 +398,40 @@ Newest last. Status ∈ {accepted, superseded, pending}.
   read rate, at no cost but the honest fact that it can't manufacture identities
   the classifier can't read. Raising precision is the separate backlog lever
   (classifier abstain class / in-game-crop fine-tune), not this slice.
+
+## ADR-011 — Surface v2 in the deployed demo via a precomputed NBA sample
+
+- **Date:** 2026-07-11 · **Status:** accepted (F-1)
+- **Context.** v2 (registration §4.2, registered stats §4.3, identity §4.4/E) was
+  all in the repo but **invisible in the deployed demo** — the live app served
+  only v1 fixed-camera samples, and its "How it works" text still said jersey OCR
+  needed higher-res footage (pre-task-D). For a portfolio the deployed app is what
+  people see, so the strongest story (a *moving* broadcast → physical player stats
+  → honest hybrid identity) was the biggest thing missing from view.
+- **Decision.** Add a precomputed `app/samples/nba_broadcast/` sample (annotated
+  registration GIF, identity `stats.json` with `meta`, occupancy heatmap) built by
+  `scripts/build_nba_sample.py` from the already-committed v2 artifacts (each
+  regenerable via its source script with `--regen`). Teach `streamlit_app.py` to
+  detect the v2 format (`stats.json` has a `meta` block) and render registration +
+  read-rate metrics, a per-player table with a **jersey-number column**, and an
+  expander that states the ~11% read-rate limit plainly. Default the sample
+  selector to `nba_broadcast` so the demo opens on the flagship v2 result.
+- **Options rejected.** *Fold auto-registration into `pipeline.py` / the
+  "run on my clip" path* — deferred to backlog: the deployed app can't run video
+  inference anyway (free-tier limit), so it adds no demo value for real cost; it's
+  a v3 local-runner concern. *Hide the low read rate / show only named players* —
+  rejected outright: the honesty gate is this project's brand, so the demo shows
+  the ~11% and the "#22 on several players" misread in the open. A confidently
+  reported weak number reads as a stronger signal than a hidden one.
+- **Constraint respected.** `app/streamlit_app.py` keeps its module-level imports
+  to **streamlit + stdlib only** (Community Cloud builds from `app/requirements.txt`,
+  not the root env) — verified, so the deploy can't break on a heavy import as the
+  old `packages.txt` did (see the README deploy note).
+- **Validation.** Ran the app locally (headless) on the sample: the video tab shows
+  the registration GIF + minimap with 900 frames / 100% registered / 11% read
+  rate; the stats tab shows tracks 107 → 53, the hybrid caption, the numbered table
+  (#22 …, anonymous rows "—"), and the honest-limit expander. v1 samples still
+  render unchanged. Reproduce: `uv run streamlit run app/streamlit_app.py`.
+- **Consequences.** The deployed demo now leads with v2. No raw broadcast video is
+  committed — only the annotated GIF/PNG/JSON (data-hygiene rule). The
+  `pipeline.py` v2 integration and classifier-precision work remain backlog.
