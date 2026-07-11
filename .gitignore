@@ -31,3 +31,4 @@ out/
 
 # OMC session state
 .omc/
+report/
