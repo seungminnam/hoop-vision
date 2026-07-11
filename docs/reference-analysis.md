@@ -136,6 +136,14 @@ Ships as a hybrid (per-player where read, per-track otherwise); R1-style
 per-named-player box scores need either higher-res close footage or the levers
 in ADR-009 (appearance stitching before reading, an abstain class).
 
+**Precision fix 2026-07-11 ([ADR-012](decisions.md)).** Both levers landed:
+court-space stitching (E-1) plus a classifier retrained with degradation
+augmentation and an "unreadable" abstain class (task G, no new labels). On the
+clip the "#22" misread collapse dropped 33% → 7%, 91 garbage crops are now
+rejected, and distinct named players rose 4 → 6 (read rate 0.113 → 0.151). Still
+an honest hybrid — without a roster we can't confirm each number is the correct
+player, and ~15% read rate is the 720p-broadcast floor.
+
 ### E. Not worth copying
 Ball interpolation (already have it) and basic KMeans teams (already have it).
 

@@ -53,7 +53,7 @@ samples, especially `hudl_seg1`):
 | Phase | Theme | One-line goal | Status |
 |---|---|---|---|
 | v1.1 | Tracking robustness | Measure MOT quality, then fix association (appearance + camera-motion compensation) | ◐ measurement harness done; labels + fixes next |
-| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ §4.2 done (detector 0.985 mAP; template 0.17 ft; registration 0.57 ft); §4.3 registered player stats done (100% on panning clip); §4.4 jersey identity done (detector 0.970 / classifier 0.955; ~9% read rate — honest limit); shot charts + app integration remain |
+| v2 | Dynamic homography | Per-frame court registration so minimap/shot charts work on panning cameras | ◐ §4.2 done (detector 0.985 mAP; template 0.17 ft; registration 0.57 ft); §4.3 registered player stats done (100% on panning clip); §4.4 jersey identity done (detector 0.970 / classifier 0.955; court-space stitch + task-G precision fix → "#22" collapse 33%→7%, ~15% read rate — honest limit); demo exposes v2; shot charts remain |
 | v3 | Product: "Hudl-lite" | Auto game report for amateur teams (stats, shot charts, highlights) on the free stack | ☐ not started |
 
 ## 2. Working agreements (unchanged from v1 — do not relax)
@@ -300,8 +300,17 @@ calibrator on lined courts; v2 turns it into (a) a pseudo-label factory and
   players barely moves** (~5 → ~4): both runs are dominated by the bogus "#22",
   confirming that **precision, not fragmentation, is the wall**. Kept on by
   default (it makes movement stats per-player); precision is the next lever.
+- ✅ **Classifier precision: degradation aug + abstain class (task G, [ADR-012](docs/decisions.md)).**
+  Retrained the number classifier to match the deploy distribution (crops
+  downscaled to ~12-17 px + motion-blurred) and to emit an **"unreadable"** class,
+  with **zero new manual labels** (abstain negatives mined from player-detection).
+  Held-out degraded acc 0.859 → **0.952**, abstain recall **0.889**. On the clip,
+  old → new: "#22" read share 33% → **7%**, 91 garbage crops rejected, distinct
+  players named 4 → **6**, read rate 0.113 → **0.151**. The "#22 on several
+  players" collapse is gone. Honest floor: no roster/GT to verify each number is
+  *correct*, read rate still ~15%. Weights = release v0.6.0.
 - **Accept:** ✅ pure logic unit-tested; per-player stats + honest read rate on
-  `_nba_raw`; weights released; ADR-009/010 + README/ROADMAP updated.
+  `_nba_raw`; weights released; ADR-009/010/012 + README/ROADMAP updated.
 
 **Deliverables:** dataset builder, keypoint trainer/eval, smoothed runtime,
 new demo sample, README section with metrics.

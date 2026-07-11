@@ -435,3 +435,57 @@ Newest last. Status ∈ {accepted, superseded, pending}.
 - **Consequences.** The deployed demo now leads with v2. No raw broadcast video is
   committed — only the annotated GIF/PNG/JSON (data-hygiene rule). The
   `pipeline.py` v2 integration and classifier-precision work remain backlog.
+
+## ADR-012 — Number-classifier precision: degradation augmentation + abstain class
+
+- **Date:** 2026-07-11 · **Status:** accepted (task G)
+- **Context.** D-4/E-1 proved read *precision* is the identity wall: the D-3
+  classifier collapsed small in-game numbers onto "22" (113 of 339 reads, 33%),
+  and stitching (E-1) couldn't fix a classifier that mislabels. Root cause is a
+  **domain gap** — D-3 trained on curated readable 224² crops, but a live crop is
+  a ~12-17 px number box upscaled to 224 and motion-blurred. No new labelled data
+  is available ($0 rule), so precision had to come from the model, not more data.
+- **Decision — two levers, no manual labelling** (`scripts/train_number_classifier.py`,
+  `--no-degrade --no-abstain` reproduces D-3):
+  1. **Degradation augmentation** mirrors the deploy pipeline: training crops are
+     randomly downscaled to ~20-48 px then back to 224 (as the live crop is) and
+     motion-blurred, so the model trains on its deployment distribution.
+  2. **An "unreadable" abstain class** lets the model reject a crop instead of
+     forcing a number. Seeds = the 52 empty-label OCR crops; the rest are **mined
+     for free** from `basketball-player-detection-3` — torso patches of players
+     whose number box was not detected (a numberless view), ~250 for train. D-4's
+     runner drops any read classified `unreadable` (it abstains from voting).
+- **Held-out (3-tier, new vs old v0.5.0; `--eval-only` reproduces):**
+
+  | tier | old v0.5.0 | new |
+  |---|---|---|
+  | clean number acc | 0.955 | 0.949 |
+  | **degraded number acc** | 0.859 | **0.952** |
+  | **abstain recall** | n/a | **0.889** |
+
+  Clean accuracy barely moves; degraded accuracy jumps ~9 pts (the model now
+  handles its real input), and it can abstain at all — which the old one can't.
+- **On-clip (same 30 s window, same code path, old vs new):**
+
+  | metric | old | new |
+  |---|---|---|
+  | "22" read share | 113/339 (**33%**) | 18/248 (**7%**) |
+  | reads rejected as unreadable | 0 | **91** |
+  | distinct players named | 4 (`0,11,22,30`) | **6** (`0,9,11,30,34,42`) |
+  | max same-number tracks | 3 | 2 |
+  | read rate | 0.113 | **0.151** |
+
+  The pathological "#22 on three concurrent players" is gone; the classifier now
+  rejects 91 garbage crops and surfaces a realistic spread of distinct numbers.
+- **Honest limits.** This improves precision *behaviour* — no more collapse,
+  abstains on garbage — but **without a roster / ground truth we cannot verify each
+  named number is the true player** (the jerseys aren't legibly resolvable by hand
+  on this clip). Read rate is still a modest ~15%; two residual duplicate numbers
+  (#30, #0 on 2 tracks each) may be fragments or minor misreads, kept separate by
+  the conservative merge. So it ships as the same honest hybrid, now with a
+  materially cleaner identity signal.
+- **Consequences.** New weights ship as **release v0.6.0** (the D-2 detector is
+  unchanged and re-bundled). The demo sample + `docs/player_identity_nba.json`
+  regenerate with the new model. The old model is kept locally
+  (`runs/classify/number_classifier_v050/`, gitignored) only for this comparison.
+  Ground-truth verification and read-rate lifts (higher-res sources) stay backlog.

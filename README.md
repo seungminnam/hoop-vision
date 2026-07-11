@@ -355,19 +355,35 @@ camera-invariant, the spatial gate is a physical speed bound, not image pixels
 | read rate (identified / player-tracks) | 0.075 | **0.113** |
 | distinct players named | ~5 | ~4 |
 
-The **honest headline is still read precision, not fragmentation**. Stitching
-works as designed — it halves fragmentation, doubles per-track votes, and makes
-a correctly-read player's movement stats more complete (#11: 374 → 502 frames).
-But it does **not** unlock more distinct identities: both runs are dominated by a
-bogus "#22" (the classifier reads 113 of 339 numbers as "22" and lands it on
-several concurrent tracks), because it was trained on curated close crops and
-over-commits on small motion-blurred in-game numbers. The match/vote/merge logic
-is correct by construction (it refuses to merge concurrent tracks). So the
-pipeline ships as a **hybrid**: per-*player* where a number is confirmed,
-per-*track* otherwise — with `docs/player_identity_nba.json` carrying
-`read_rate`, `number_read_histogram`, and `numbers_on_multiple_players` so the
-limit is visible in the data. The remaining lever is precision (a classifier
-abstain class / in-game-crop fine-tune), not the pipeline.
+Stitching works as designed — it halves fragmentation and doubles per-track
+votes — but E-1 showed it can't fix the real wall: **read precision**. The D-3
+classifier, trained on curated close crops, collapsed small motion-blurred
+in-game numbers onto a bogus "#22" (113 of 339 reads, on several concurrent
+tracks).
+
+**Task G fixed the classifier, not the pipeline** ([ADR-012](docs/decisions.md)):
+retrained with **degradation augmentation** (crops downscaled to ~12-17 px and
+motion-blurred to match the live input) and an **"unreadable" abstain class** (so
+it rejects a crop instead of guessing) — both with **zero new manual labels** (the
+abstain negatives are mined from the player-detection set). Held-out degraded
+accuracy rose 0.859 → **0.952**, abstain recall **0.889** (the old model can't
+abstain). On the clip, same code path, old → new:
+
+| identity, 30 s clip | old (v0.5.0) | new (v0.6.0) |
+|---|---|---|
+| "#22" read share | 113/339 (33%) | 18/248 (**7%**) |
+| reads rejected as unreadable | 0 | **91** |
+| distinct players named | 4 | **6** |
+| read rate | 0.113 | **0.151** |
+
+The "#22 on three players" collapse is gone and a realistic spread of numbers
+surfaces. **Honest limit:** without a roster / ground truth we can't verify each
+number is the *correct* player (jerseys aren't hand-legible on this 720p pan), and
+read rate is still ~15% — so it stays an honest **hybrid** (per-player where a
+number is confirmed, per-track otherwise), now with a materially cleaner identity
+signal. `docs/player_identity_nba.json` carries `read_rate`, `abstain_reads`,
+`number_read_histogram`, and `numbers_on_multiple_players` so the limits stay
+visible in the data.
 
 ## Demo app
 
@@ -378,7 +394,7 @@ minimap, shot chart, **player movement stats + occupancy heatmap**, events)
 and can run the full pipeline locally on an uploaded clip. It opens on the
 **`nba_broadcast`** sample — the v2 story on a *panning* broadcast: the court
 model registered onto the moving floor (100% of frames), full-court-feet player
-stats, and jersey-number **hybrid identity** with its honest ~11% read rate
+stats, and jersey-number **hybrid identity** with its honest ~15% read rate
 shown as-is ([ADR-011](docs/decisions.md); build the sample with
 `scripts/build_nba_sample.py`).
 
