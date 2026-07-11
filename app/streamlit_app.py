@@ -44,9 +44,65 @@ def find_one(folder: Path, patterns: list[str]) -> Path | None:
     return None
 
 
+def _v2_player_stats(players: list[dict], meta: dict) -> None:
+    """Render the v2 registered/identity stats: registration + read-rate metrics,
+    a per-player table with jersey numbers, and an honest read-rate caveat."""
+    cols = st.columns(3)
+    cols[0].metric("Court registered", f"{meta.get('registration_rate', 0):.0%}")
+    cols[1].metric(
+        "Tracks (raw → stitched)",
+        f"{meta.get('tracks_seen', '—')} → {meta.get('tracks_after_stitch', '—')}",
+    )
+    cols[2].metric("Jersey read rate", f"{meta.get('read_rate', 0):.0%}")
+
+    st.caption(
+        "Physical stats (feet) on a **panning broadcast** — court coordinates are "
+        "camera-invariant, so per-frame registration handles the pan. Rows with a "
+        "jersey number are per-**player** (fragments stitched, number voted); "
+        "anonymous rows are still per-track."
+    )
+    rows = [
+        {
+            "number": f"#{p['number']}" if p.get("number") else "—",
+            "track": p["track_id"],
+            "frames": p["frames"],
+            "distance_ft": p["distance_ft"],
+            "avg_speed_mph": p["avg_speed_mph"],
+            "top_speed_mph": p["top_speed_mph"],
+        }
+        for p in players
+    ]
+    st.dataframe(rows, width="stretch")
+
+    dupes = meta.get("numbers_on_multiple_players") or {}
+    with st.expander("Why is the read rate only ~10%? (honest limit)"):
+        st.markdown(
+            f"""
+            Reading jersey numbers on a **720p broadcast** is hard: the number
+            detector (AP50 0.97) and classifier (acc 0.96) are strong on curated
+            close crops, but small, motion-blurred in-game numbers collapse onto a
+            few classes. Here the classifier reads **{meta.get("number_reads", 0)}
+            numbers** but confirms only **{meta.get("tracks_identified", 0)}**
+            players{
+                f", and #{next(iter(dupes))} lands on {next(iter(dupes.values()))} "
+                "different players at once (a misread, so those tracks stay separate)"
+                if dupes
+                else ""
+            }.
+
+            The bottleneck is read **precision**, not the matching/voting/merge
+            logic — so this ships as an honest **hybrid** (named where read,
+            per-track otherwise) rather than a fake full box score.
+            """
+        )
+
+
 def show_results(folder: Path) -> None:
     events_file = find_one(folder, ["*events.json"])
     payload = json.loads(events_file.read_text()) if events_file else {}
+    stats_file = find_one(folder, ["*stats.json"])
+    stats = json.loads(stats_file.read_text()) if stats_file else {}
+    meta = stats.get("meta")  # present only on v2 (registered / identity) samples
 
     video_tab, chart_tab, stats_tab, events_tab, about_tab = st.tabs(
         ["🎬 Annotated video", "🗺️ Shot chart", "📊 Player stats", "📋 Events", "ℹ️ How it works"]
@@ -68,6 +124,11 @@ def show_results(folder: Path) -> None:
                 "Shot analytics",
                 "available" if payload.get("shot_analytics_available") else "unavailable",
             )
+        elif meta:  # v2 panning-broadcast sample: no shot events, show registration
+            cols = st.columns(3)
+            cols[0].metric("Frames processed", meta.get("frames_processed", "—"))
+            cols[1].metric("Court registered", f"{meta.get('registration_rate', 0):.0%}")
+            cols[2].metric("Jersey read rate", f"{meta.get('read_rate', 0):.0%}")
 
     with chart_tab:
         chart = find_one(folder, ["*shotchart*.png"])
@@ -83,11 +144,11 @@ def show_results(folder: Path) -> None:
             st.info("No shot chart for this sample.")
 
     with stats_tab:
-        stats_file = find_one(folder, ["*stats.json"])
         heatmap = find_one(folder, ["*heatmap*.png"])
-        stats = json.loads(stats_file.read_text()) if stats_file else {}
         players = stats.get("players", [])
-        if players:
+        if players and meta:
+            _v2_player_stats(players, meta)
+        elif players:
             st.caption(
                 "Per-track distance and speed in physical units (homography → feet). "
                 "Per track, not per named player — short tracks are still fragments."
@@ -117,15 +178,22 @@ def show_results(folder: Path) -> None:
     with about_tab:
         st.markdown(
             """
-            **Pipeline** — YOLO (fine-tuned on player/ball/rim) → ByteTrack IDs +
-            appearance track stitching → jersey-color k-means team assignment →
-            homography → trajectory state machine for shot attempts/outcomes,
-            plus per-player distance/speed and a court occupancy heatmap.
+            **v1 pipeline (fixed camera)** — YOLO (fine-tuned on player/ball/rim) →
+            ByteTrack IDs + appearance track stitching → jersey-color k-means team
+            assignment → homography → trajectory state machine for shot
+            attempts/outcomes, plus per-player distance/speed and an occupancy heatmap.
 
-            **Honesty gate** — if the ball track covers <40% of frames, the clip's
-            shot analytics are reported *unavailable* instead of guessing. Player
-            stats are per track (not per named player — jersey OCR needs numbered,
-            higher-res footage than these clips).
+            **v2 pipeline (panning broadcast)** — a YOLO11-pose model finds 33 court
+            keypoints per frame → RANSAC homography registered to full-court NBA feet
+            (smoothed, last-good fallback), so a moving camera still yields physical
+            player stats. A jersey-number detector + classifier then reads numbers and
+            merges track fragments into per-player identities. Try the **nba_broadcast**
+            sample.
+
+            **Honesty gate** — shot analytics are withheld when ball coverage is too
+            low (<40%); jersey read rate is reported as-is (~10% on a 720p pan — read
+            precision, not the logic, is the limit), so stats are an honest hybrid:
+            per-player where a number is confirmed, per-track otherwise.
 
             **$0 stack** — Colab/Kaggle free GPUs (training), Roboflow Universe
             (dataset), Streamlit Community Cloud (this app), GitHub (repo + CI).
@@ -145,7 +213,11 @@ if mode == "Sample results":
             "outputs (never raw broadcast video — see data/README.md)."
         )
     else:
-        chosen = st.sidebar.selectbox("Sample clip", samples, format_func=lambda p: p.name)
+        _names = [p.name for p in samples]
+        _default = _names.index("nba_broadcast") if "nba_broadcast" in _names else 0
+        chosen = st.sidebar.selectbox(
+            "Sample clip", samples, index=_default, format_func=lambda p: p.name
+        )
         show_results(chosen)
 else:
     st.sidebar.warning(
