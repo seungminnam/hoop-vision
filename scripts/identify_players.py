@@ -51,6 +51,7 @@ from hoopvision.teams import color_histogram, torso_crop
 ROOT = Path(__file__).resolve().parents[1]
 SIZE = 640  # detector / registration input (matches 640-stretched training)
 BOUNDS_MARGIN = 2.0
+ABSTAIN_LABEL = "unreadable"  # classifier's abstain class (task G); dropped from voting
 
 
 @dataclass
@@ -195,7 +196,7 @@ def collect(
     feats: dict[int, list[np.ndarray]] = {}  # torso histograms per track (640 space)
     first_court: dict[int, tuple[int, tuple[float, float]]] = {}
     last_court: dict[int, tuple[int, tuple[float, float]]] = {}
-    processed = registered = read_frames = 0
+    processed = registered = read_frames = abstain_reads = 0
 
     for i in range(n_frames):
         ok, frame = cap.read()
@@ -232,6 +233,9 @@ def collect(
         if i % read_every == 0:
             read_frames += 1
             for native_box, number in reader.read(frame, number_conf):
+                if number == ABSTAIN_LABEL:  # classifier said "can't read" -> no vote
+                    abstain_reads += 1
+                    continue
                 nx1, ny1, nx2, ny2 = native_box
                 box640 = (nx1 * sx, ny1 * sy, nx2 * sx, ny2 * sy)  # into 640 space
                 reads.append(NumberRead(i, box640, number))
@@ -246,6 +250,7 @@ def collect(
         "frames_read": read_frames,
         "read_every": read_every,
         "number_reads": len(reads),
+        "abstain_reads": abstain_reads,
         "tracks_seen": len(spans),
     }
     tracklets = _build_tracklets(first_court, last_court, feats)

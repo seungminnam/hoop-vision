@@ -74,25 +74,21 @@ def _v2_player_stats(players: list[dict], meta: dict) -> None:
     ]
     st.dataframe(rows, width="stretch")
 
-    dupes = meta.get("numbers_on_multiple_players") or {}
-    with st.expander("Why is the read rate only ~10%? (honest limit)"):
+    with st.expander("Why isn't every player named? (honest limit)"):
         st.markdown(
             f"""
-            Reading jersey numbers on a **720p broadcast** is hard: the number
-            detector (AP50 0.97) and classifier (acc 0.96) are strong on curated
-            close crops, but small, motion-blurred in-game numbers collapse onto a
-            few classes. Here the classifier reads **{meta.get("number_reads", 0)}
-            numbers** but confirms only **{meta.get("tracks_identified", 0)}**
-            players{
-                f", and #{next(iter(dupes))} lands on {next(iter(dupes.values()))} "
-                "different players at once (a misread, so those tracks stay separate)"
-                if dupes
-                else ""
-            }.
+            Reading jersey numbers on a **720p broadcast** is hard: numbers are
+            ~12-17 px, motion-blurred, and often turned away. The classifier is
+            trained with matching degradation and an **"unreadable" class**, so it
+            **rejects {meta.get("abstain_reads", 0)} garbage crops** instead of
+            guessing, then confirms **{meta.get("tracks_identified", 0)}** players
+            from **{meta.get("number_reads", 0)}** clean reads.
 
-            The bottleneck is read **precision**, not the matching/voting/merge
-            logic — so this ships as an honest **hybrid** (named where read,
-            per-track otherwise) rather than a fake full box score.
+            That abstain step broke the earlier failure where one misread number
+            was forced onto several players. What's left is an honest floor: read
+            **precision** is the wall, and without a roster we can't verify each
+            number is the *correct* player — so this ships as a **hybrid** (named
+            where confidently read, per-track otherwise), not a fake box score.
             """
         )
 
@@ -191,9 +187,10 @@ def show_results(folder: Path) -> None:
             sample.
 
             **Honesty gate** — shot analytics are withheld when ball coverage is too
-            low (<40%); jersey read rate is reported as-is (~10% on a 720p pan — read
-            precision, not the logic, is the limit), so stats are an honest hybrid:
-            per-player where a number is confirmed, per-track otherwise.
+            low (<40%); the jersey classifier can answer "unreadable" and the read
+            rate is reported as-is (~15% on a 720p pan — read precision is the wall),
+            so stats are an honest hybrid: per-player where a number is confidently
+            read, per-track otherwise.
 
             **$0 stack** — Colab/Kaggle free GPUs (training), Roboflow Universe
             (dataset), Streamlit Community Cloud (this app), GitHub (repo + CI).

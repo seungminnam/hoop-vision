@@ -10,55 +10,49 @@
     "registration_rate": 1.0,
     "frames_read": 180,
     "read_every": 5,
-    "number_reads": 339,
+    "number_reads": 248,
+    "abstain_reads": 91,
     "tracks_seen": 107,
     "stitching": "on",
     "tracks_after_stitch": 53,
-    "tracks_after_merge": 44,
-    "tracks_identified": 6,
-    "read_rate": 0.113,
-    "tracks_with_any_read": 22,
-    "max_votes_on_a_track": 46,
-    "median_votes_among_read_tracks": 9.0,
+    "tracks_after_merge": 46,
+    "tracks_identified": 8,
+    "read_rate": 0.151,
+    "tracks_with_any_read": 21,
+    "max_votes_on_a_track": 36,
+    "median_votes_among_read_tracks": 8.0,
     "number_read_histogram": {
-      "22": 113,
-      "30": 50,
-      "10": 32,
-      "27": 23,
-      "0": 22,
-      "42": 19,
-      "9": 17,
-      "11": 13,
-      "31": 9,
-      "3": 8,
-      "1": 6,
-      "23": 6,
-      "40": 5,
-      "4": 3,
-      "32": 3,
-      "34": 2,
-      "45": 2,
-      "13": 2,
+      "30": 54,
+      "0": 28,
+      "42": 24,
+      "5": 21,
+      "22": 18,
+      "34": 17,
+      "9": 12,
+      "8": 11,
+      "55": 10,
+      "11": 8,
+      "3": 7,
+      "27": 7,
+      "10": 5,
+      "15": 5,
+      "7": 4,
+      "45": 3,
+      "23": 3,
+      "18": 3,
+      "33": 2,
+      "14": 2,
       "00": 1,
-      "5": 1,
-      "18": 1,
-      "8": 1
+      "2": 1,
+      "40": 1,
+      "13": 1
     },
     "numbers_on_multiple_players": {
-      "22": 3
+      "30": 2,
+      "0": 2
     }
   },
   "players": [
-    {
-      "track_id": 5,
-      "team": null,
-      "frames": 698,
-      "seconds": 30.0,
-      "distance_ft": 234.6,
-      "avg_speed_mph": 5.3,
-      "top_speed_mph": 16.8,
-      "number": "22"
-    },
     {
       "track_id": 12,
       "team": null,
@@ -67,17 +61,27 @@
       "distance_ft": 222.2,
       "avg_speed_mph": 5.7,
       "top_speed_mph": 16.7,
-      "number": null
+      "number": "30"
     },
     {
       "track_id": 3,
       "team": null,
-      "frames": 674,
-      "seconds": 27.8,
-      "distance_ft": 208.3,
-      "avg_speed_mph": 5.1,
-      "top_speed_mph": 16.7,
-      "number": "22"
+      "frames": 586,
+      "seconds": 22.4,
+      "distance_ft": 184.7,
+      "avg_speed_mph": 5.6,
+      "top_speed_mph": 16.5,
+      "number": null
+    },
+    {
+      "track_id": 5,
+      "team": null,
+      "frames": 594,
+      "seconds": 23.0,
+      "distance_ft": 179.7,
+      "avg_speed_mph": 5.3,
+      "top_speed_mph": 16.4,
+      "number": null
     },
     {
       "track_id": 35,
@@ -87,7 +91,7 @@
       "distance_ft": 175.7,
       "avg_speed_mph": 6.0,
       "top_speed_mph": 18.0,
-      "number": null
+      "number": "0"
     },
     {
       "track_id": 9,
@@ -97,7 +101,7 @@
       "distance_ft": 162.3,
       "avg_speed_mph": 5.0,
       "top_speed_mph": 15.3,
-      "number": "22"
+      "number": null
     },
     {
       "track_id": 37,
@@ -107,7 +111,7 @@
       "distance_ft": 140.9,
       "avg_speed_mph": 6.5,
       "top_speed_mph": 19.4,
-      "number": null
+      "number": "9"
     },
     {
       "track_id": 1,
@@ -167,7 +171,7 @@
       "distance_ft": 97.6,
       "avg_speed_mph": 5.5,
       "top_speed_mph": 19.5,
-      "number": null
+      "number": "42"
     },
     {
       "track_id": 2,
@@ -188,6 +192,16 @@
       "avg_speed_mph": 4.3,
       "top_speed_mph": 15.7,
       "number": "30"
+    },
+    {
+      "track_id": 89,
+      "team": null,
+      "frames": 104,
+      "seconds": 3.4,
+      "distance_ft": 42.1,
+      "avg_speed_mph": 8.4,
+      "top_speed_mph": 17.9,
+      "number": null
     },
     {
       "track_id": 90,
@@ -238,6 +252,16 @@
       "avg_speed_mph": 6.8,
       "top_speed_mph": 18.6,
       "number": null
+    },
+    {
+      "track_id": 82,
+      "team": null,
+      "frames": 88,
+      "seconds": 3.0,
+      "distance_ft": 23.5,
+      "avg_speed_mph": 5.3,
+      "top_speed_mph": 17.9,
+      "number": "34"
     },
     {
       "track_id": 91,
