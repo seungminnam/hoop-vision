@@ -30,11 +30,7 @@ import cv2
 import numpy as np
 
 from hoopvision.court_template import COURT_LENGTH_FT, COURT_WIDTH_FT, NUM_KEYPOINTS
-from hoopvision.registration import (
-    CourtRegistrar,
-    court_polylines_ft,
-    image_to_court,
-)
+from hoopvision.registration import CourtRegistrar, image_to_court
 from hoopvision.stats import PlayerStat, TrackPath, stats_from_paths
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -121,46 +117,12 @@ def collect_paths(
     return paths, meta
 
 
-def _draw_court(ax) -> None:
-    for poly in court_polylines_ft():
-        ax.plot(poly[:, 0], poly[:, 1], color="#555", lw=1, zorder=1)
-    ax.set_xlim(-3, COURT_LENGTH_FT + 3)
-    ax.set_ylim(-3, COURT_WIDTH_FT + 3)
-    ax.set_aspect("equal")
-    ax.axis("off")
-
-
 def render_heatmap(paths: dict[int, TrackPath], out: Path, title: str) -> None:
-    import matplotlib
-
-    matplotlib.use("Agg")
-    import matplotlib.pyplot as plt
-    from scipy.ndimage import gaussian_filter
+    """Whole-clip occupancy heatmap (rendering shared with game_report, H-2)."""
+    from hoopvision.viz import render_court_heatmap
 
     pts = np.array([xy for obs in paths.values() for _, xy, _ in obs])
-    fig, ax = plt.subplots(figsize=(9, 5))
-    if len(pts):
-        hist, _, _ = np.histogram2d(
-            pts[:, 0],
-            pts[:, 1],
-            bins=(94, 50),
-            range=[[0, COURT_LENGTH_FT], [0, COURT_WIDTH_FT]],
-        )
-        hist = gaussian_filter(hist, sigma=1.5)
-        ax.imshow(
-            hist.T,
-            extent=[0, COURT_LENGTH_FT, 0, COURT_WIDTH_FT],
-            origin="lower",
-            cmap="hot",
-            alpha=0.75,
-            interpolation="bilinear",
-            zorder=0,
-        )
-    _draw_court(ax)
-    ax.set_title(title)
-    fig.tight_layout()
-    fig.savefig(out, dpi=150, bbox_inches="tight")
-    plt.close(fig)
+    render_court_heatmap(pts, out, title)
 
 
 def render_trails(
@@ -173,9 +135,10 @@ def render_trails(
     import matplotlib.pyplot as plt
 
     from hoopvision.stats import _smooth
+    from hoopvision.viz import draw_court_ft
 
     fig, ax = plt.subplots(figsize=(9, 5))
-    _draw_court(ax)
+    draw_court_ft(ax)
     cmap = plt.get_cmap("tab20")
     longest = [obs for obs in paths.values() if len(obs) >= min_frames]
     longest.sort(key=len, reverse=True)
