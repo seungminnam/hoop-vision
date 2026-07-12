@@ -161,3 +161,56 @@ class VideoSink:
 
     def __exit__(self, *exc) -> None:
         self.close()
+
+
+def draw_court_ft(ax) -> None:
+    """Draw the NBA full court (feet) onto a matplotlib axis."""
+    from .court_template import COURT_LENGTH_FT, COURT_WIDTH_FT
+    from .registration import court_polylines_ft
+
+    for poly in court_polylines_ft():
+        ax.plot(poly[:, 0], poly[:, 1], color="#555", lw=1, zorder=1)
+    ax.set_xlim(-3, COURT_LENGTH_FT + 3)
+    ax.set_ylim(-3, COURT_WIDTH_FT + 3)
+    ax.set_aspect("equal")
+    ax.axis("off")
+
+
+def render_court_heatmap(points_ft: np.ndarray, out: str | Path, title: str) -> None:
+    """Full-court occupancy heatmap from (N, 2) court-feet points.
+
+    Shared by `scripts/registered_stats.py` (whole-clip occupancy) and
+    `scripts/game_report.py` (per-player, task H-2). Matplotlib is imported
+    lazily so importing `viz` stays cheap for video-only callers.
+    """
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    from scipy.ndimage import gaussian_filter
+
+    from .court_template import COURT_LENGTH_FT, COURT_WIDTH_FT
+
+    fig, ax = plt.subplots(figsize=(9, 5))
+    if len(points_ft):
+        hist, _, _ = np.histogram2d(
+            points_ft[:, 0],
+            points_ft[:, 1],
+            bins=(94, 50),
+            range=[[0, COURT_LENGTH_FT], [0, COURT_WIDTH_FT]],
+        )
+        hist = gaussian_filter(hist, sigma=1.5)
+        ax.imshow(
+            hist.T,
+            extent=[0, COURT_LENGTH_FT, 0, COURT_WIDTH_FT],
+            origin="lower",
+            cmap="hot",
+            alpha=0.75,
+            interpolation="bilinear",
+            zorder=0,
+        )
+    draw_court_ft(ax)
+    ax.set_title(title)
+    fig.tight_layout()
+    fig.savefig(out, dpi=150, bbox_inches="tight")
+    plt.close(fig)
